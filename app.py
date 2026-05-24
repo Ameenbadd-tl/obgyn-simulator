@@ -13,7 +13,6 @@ st.sidebar.header("🔑 إعدادات الاتصال الآمن")
 api_input = st.sidebar.text_input("أدخل مفتاح Gemini API الجديد هنا:", type="password")
 st.sidebar.markdown("[اضغط هنا لإنشاء مفتاح جديد إذا تم حظر مفتاحك](https://aistudio.google.com/)")
 
-# محاولة جلب المفتاح من الـ Secrets كخيار احتياطي
 if api_input:
     GEMINI_API_KEY = api_input
 elif "GEMINI_API_KEY" in st.secrets:
@@ -100,14 +99,15 @@ if st.button("🎬 بدء أخذ History لحالة جديدة"):
     
     st.success("دخلت المريضة العيادة وجلست على الكرسي وهي صامتة الآن وتنتظر سؤالك. اضغط على المايك بالأسفل وابدأ بسؤالها!")
 
-# 6. عرض المحادثة الحالية (تمت الصيانة الشاملة هنا باستخدام دالة .get والتحقق الصارم لمنع أي انهيار)
-for index, msg in enumerate(st.session_state.messages):
+# 6. عرض المحادثة الحالية بشكل مبسط ومؤمن بالكامل
+for msg in st.session_state.messages:
     if msg.get("role") == "patient":
         with st.chat_message("user", avatar="🤰"):
             st.write(msg.get("text", ""))
+            # تشغيل الصوت بشكل مبسط بدون تمرير قيم ديناميكية للـ key لمنع خطأ بايثون 3.14
             audio_path = msg.get("audio_path")
             if audio_path and os.path.exists(audio_path):
-                st.audio(audio_path, key=f"audio_key_{index}")
+                st.audio(audio_path)
     elif msg.get("role") == "doctor":
         with st.chat_message("assistant", avatar="👨‍⚕️"):
             st.write(msg.get("text", ""))
@@ -135,7 +135,7 @@ if st.session_state.case_started:
                 tts = gTTS(text=response_text, lang='ar', slow=False)
                 tts.save(tts_path)
                 
-                st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب"})
+                st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب", "audio_path": None})
                 st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
                 st.rerun()
             else:
@@ -151,7 +151,7 @@ if st.session_state.case_started:
                 tts = gTTS(text=response_text, lang='ar', slow=False)
                 tts.save(tts_path)
                 
-                st.session_state.messages.append({"role": "doctor", "text": user_text_input})
+                st.session_state.messages.append({"role": "doctor", "text": user_text_input, "audio_path": None})
                 st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
                 st.rerun()
             else:
