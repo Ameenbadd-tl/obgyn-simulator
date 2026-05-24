@@ -4,3 +4,4 @@ torch
 sentencepiece
 openai-whisper
 coqui-tts
+torchaudio
