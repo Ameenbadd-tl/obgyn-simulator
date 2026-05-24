@@ -7,23 +7,21 @@ import random
 
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout="centered")
-st.title("محاكي History 4th year 🩺")
+st.title("🩺 محاكي history 4th year")
+st.write(" اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك مباشرة.")
 
-# 2. حماية مفتاح الـ API عبر الجانب الجانبي (Sidebar)
-st.sidebar.header("🔑 إعدادات الاتصال الآمن")
-api_input = st.sidebar.text_input("أدخل مفتاح Gemini API الجديد هنا:", type="password")
-st.sidebar.markdown("[اضغط هنا لإنشاء مفتاح جديد](https://aistudio.google.com/)")
+# 2. مجمّع المفاتيح الذكي (API Keys Pool) لتوزيع الضغط ومنع التوقف
+API_KEYS_POOL = [
+    "AIzaSyD5IwqCmtkHYiG-7tUaKX-nBsKpGvzL6nA",
+    "AIzaSyD0gsQhz7PXQH9gZRRQWp7zCjr9ExW9n-E",
+    "AIzaSyDo97Pi1x0o8D0wbBbtUFkQCgg3hDrhf_I",
+    "AIzaSyATd6ZxjWIGgB-WNJzJm-hgLTrpAzE6Ypo",
+    "AIzaSyCdJiX4FBW6YqOZo2ia5KGSyubFpxij4d0",
+    "AIzaSyDMdZK-0njUm_Zzm4yONE-E4MLzgGdw4oQ",
+    "AIzaSyBX_0D2YMSQXpaos4KkkJ6H3GmUyjxzPPM"
+]
 
-if api_input:
-    GEMINI_API_KEY = api_input
-elif "GEMINI_API_KEY" in st.secrets:
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-else:
-    GEMINI_API_KEY = None
-
-st.write("اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك.")
-
-# 3. قائمة السيناريوهات المتنوعة
+# 3. قائمة السيناريوهات المتنوعة لضمان عشوائية الحالات
 SCENARIOS = [
     "Placenta Previa (Painless vaginal bleeding in 3rd trimester)",
     "Abruptio Placentae (Painful vaginal bleeding with uterine tenderness in 3rd trimester)",
@@ -37,7 +35,7 @@ SCENARIOS = [
     "Molar Pregnancy (Vaginal bleeding, oversized uterus for gestational age, severe nausea)"
 ]
 
-# 4. الـ System Prompt الطبي المتطور
+# 4. الـ System Prompt الطبي المتطور لتوجيه الذكاء الاصطناعي
 BASE_SYSTEM_PROMPT = """
 You are acting as a medical simulation bot for a 4th-year medical student practicing OB/GYN history taking. 
 Your role is to simulate a Libyan/Arab pregnant or gynecological patient.
@@ -51,7 +49,7 @@ CRITICAL RULES:
 6. You are the patient. Do NOT break character until the user asks for evaluation.
 """
 
-# 5. إدارة الجلسة
+# 5. إدارة الجلسة والذاكرة
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "case_started" not in st.session_state:
@@ -61,13 +59,12 @@ if "last_processed_audio" not in st.session_state:
 if "current_case_prompt" not in st.session_state:
     st.session_state.current_case_prompt = BASE_SYSTEM_PROMPT
 
-# دالة إرسال آمنة ومباشرة عبر الـ API الرسمي المستقر بدون مكتبات وسيطة تسبب أخطاء
+# دالة إرسال تختار مفتاحاً عشوائياً في كل طلب لضمان استمرار الخدمة
 def ask_gemini_direct(audio_path_input=None, text_input=None):
-    if not GEMINI_API_KEY:
-        return "Error: يرجى إدخال مفتاح الـ API في القائمة الجانبية أولاً لتفعيل المحاكي!"
+    # اختيار مفتاح عشوائي من المجمّع
+    selected_key = random.choice(API_KEYS_POOL)
     
-    # استخدام الإصدار المستقر والنهائي v1
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={selected_key}"
     headers = {"Content-Type": "application/json"}
     
     # بناء الذاكرة والسياق
@@ -76,7 +73,7 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
         role_type = "model" if msg["role"] == "patient" else "user"
         contents.append({"role": role_type, "parts": [{"text": msg["text"]}]})
     
-    # تجهيز المدخل الحالي (صوت أو نص)
+    # تجهيز المدخل الحالي
     current_parts = []
     if audio_path_input:
         with open(audio_path_input, "rb") as audio_file:
@@ -101,7 +98,7 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
         return f"Error: {str(e)}"
 
 # زر بدء حالة جديدة
-if st.button("🎬 بدء في اخد history "):
+if st.button("🎬 بدء أخذ History لحالة جديدة"):
     st.session_state.messages = []
     st.session_state.case_started = True
     st.session_state.last_processed_audio = None
@@ -110,7 +107,7 @@ if st.button("🎬 بدء في اخد history "):
     st.session_state.current_case_prompt = f"{BASE_SYSTEM_PROMPT}\nYour specific hidden condition for this session is: {selected_case}. Do NOT reveal it until requested."
     st.success("دخلت المريضة العيادة وجلست على الكرسي وهي صامتة الآن وتنتظر سؤالك. اضغط على المايك بالأسفل وابدأ بسؤالها!")
 
-# 6. عرض المحادثة الآمن والخالي من الـ TypeError
+# 6. عرض المحادثة
 for msg in st.session_state.messages:
     if msg.get("role") == "patient":
         with st.chat_message("user", avatar="🤰"):
