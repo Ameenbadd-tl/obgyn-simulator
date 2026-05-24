@@ -12,13 +12,13 @@ st.write("مرحباً بك يا دكتور أمين وزملائك. تم حل �
 
 # 2. مجمّع المفاتيح السبعة المحمية بنظام التناوب الذكي
 API_KEYS_POOL = [
-    "AIzaSyDb5Thpjzk2YjtmNUiecR4NzxQzsJaelb4",
-    "AIzaSyATL8FABjR8ECyUyx-rUVAuEHTsBCfrBEg",
-    "AIzaSyAxtThGXNx3RfHv9bWHO_nxrRuILqeg-_4",
-    "AIzaSyCk8izLy73ACSWAqxq1XAPMBe0QKzENPWo",
-    "AIzaSyB7tmDNDxgpIefg_-hud2vpAP5sOrByQxs",
-    "AIzaSyCDcFCqFkVV-qA9wk8rXAEWW10VrDNvMig",
-    "AIzaSyCTMSL1mCU2J3W0vEueR0n1mM3qd5-DpQE"
+    "AIzaSyCgXikXLejIGsfTwfBbLd1n7cxVxFxYQeU",
+    "AIzaSyCKSxhg02oMi-JFvtK8iLVa8hlM64-bQxM",
+    "AIzaSyAFG4qNJF_mSL5Vx4PTThMdiAYPRtle1Sk",
+    "AIzaSyAcZ-KgzwlNeqQ27t-Evzy6QsCqSP-F2q0,
+    "AIzaSyD-UtKn0V0PTsMX0TSxiH_bn6sHgdoULDw",
+    "AIzaSyBwAjQjdpndUPF2eyGLef1mIQesM8AUvi0",
+    "AIzaSyBwAjQjdpndUPF2eyGLef1mIQesM8AUvi0"
 ]
 
 # 3. بنك البيانات لتوليد شخصيات وهويات ليبية عشوائية ومختلفة في كل مرة
