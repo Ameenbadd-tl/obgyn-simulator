@@ -7,21 +7,21 @@ import random
 
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout="centered")
-st.title("🩺 محاكي history 4th year")
-st.write(" اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك مباشرة.")
+st.title("🩺 محاكي الـ Long Case الصوتي التلقائي")
+st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك مباشرة.")
 
-# 2. مجمّع المفاتيح الذكي (API Keys Pool) لتوزيع الضغط ومنع التوقف
+# 2. مجمّع المفاتيح الجديد (ضع مفاتيحك الجديدة النظيفة هنا داخل المستودع الخاص)
 API_KEYS_POOL = [
-    "AIzaSyAyr2tZVOcYgoCOfF1kXCnPCD41PGSEjxI",
-    "AIzaSyBHtq_8zblQ52ca93jpGDrhDWwaEll0BuM",
+    "AIzaSyCGXIIx3HIMC7GeFZFrcSmXpxZGgUG8K5Q",
+    "AIzaSyBXxYZNFlVmpKf1f_oSgWqYVfgC7_spNCU",
+    "AIzaSyAA5E6EziXwrm8U3fFFCPkH-s9If3tP674",
     "AIzaSyAn8q3hwFn0K0i_OTOVHdhdTxR5j0MHUyw",
     "AIzaSyC0uiwlDJW_STJL6i9Edl1gDdOiEE63MFc",
-    "AIzaSyAA5E6EziXwrm8U3fFFCPkH-s9If3tP674",
-    "AIzaSyBXxYZNFlVmpKf1f_oSgWqYVfgC7_spNCU",
-    "AIzaSyCGXIIx3HIMC7GeFZFrcSmXpxZGgUG8K5Q"
+    "AIzaSyBHtq_8zblQ52ca93jpGDrhDWwaEll0BuM",
+    "AIzaSyAyr2tZVOcYgoCOfF1kXCnPCD41PGSEjxI"
 ]
 
-# 3. قائمة السيناريوهات المتنوعة لضمان عشوائية الحالات
+# 3. قائمة السيناريوهات المتنوعة
 SCENARIOS = [
     "Placenta Previa (Painless vaginal bleeding in 3rd trimester)",
     "Abruptio Placentae (Painful vaginal bleeding with uterine tenderness in 3rd trimester)",
@@ -35,7 +35,7 @@ SCENARIOS = [
     "Molar Pregnancy (Vaginal bleeding, oversized uterus for gestational age, severe nausea)"
 ]
 
-# 4. الـ System Prompt الطبي المتطور لتوجيه الذكاء الاصطناعي
+# 4. الـ System Prompt الطبي المتطور
 BASE_SYSTEM_PROMPT = """
 You are acting as a medical simulation bot for a 4th-year medical student practicing OB/GYN history taking. 
 Your role is to simulate a Libyan/Arab pregnant or gynecological patient.
@@ -58,44 +58,58 @@ if "last_processed_audio" not in st.session_state:
     st.session_state.last_processed_audio = None
 if "current_case_prompt" not in st.session_state:
     st.session_state.current_case_prompt = BASE_SYSTEM_PROMPT
+if "key_index" not in st.session_state:
+    st.session_state.key_index = 0
 
-# دالة إرسال تختار مفتاحاً عشوائياً في كل طلب لضمان استمرار الخدمة
+# دالة إرسال ذكية تدور على المفاتيح بالترتيب وتتخطى المفتاح المضغوط تلقائياً
 def ask_gemini_direct(audio_path_input=None, text_input=None):
-    # اختيار مفتاح عشوائي من المجمّع
-    selected_key = random.choice(API_KEYS_POOL)
-    
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={selected_key}"
-    headers = {"Content-Type": "application/json"}
-    
-    # بناء الذاكرة والسياق
-    contents = [{"role": "user", "parts": [{"text": st.session_state.current_case_prompt}]}]
-    for msg in st.session_state.messages:
-        role_type = "model" if msg["role"] == "patient" else "user"
-        contents.append({"role": role_type, "parts": [{"text": msg["text"]}]})
-    
-    # تجهيز المدخل الحالي
-    current_parts = []
-    if audio_path_input:
-        with open(audio_path_input, "rb") as audio_file:
-            audio_data = base64.b64encode(audio_file.read()).decode("utf-8")
-        current_parts.append({"inline_data": {"mime_type": "audio/wav", "data": audio_data}})
-        current_parts.append({"text": "ردي على سؤال الدكتور بصفتك المريضة بالعامية الليبية في سطر واحد قصير جداً ومباشر وطبيعي"})
-    else:
-        current_parts.append({"text": text_input})
+    # محاولة الإرسال وتجربة المفاتيح المتاحة في حال فشل أحدها بسبب الكوتا
+    for _ in range(len(API_KEYS_POOL)):
+        idx = st.session_state.key_index
+        selected_key = API_KEYS_POOL[idx]
         
-    contents.append({"role": "user", "parts": current_parts})
-    payload = {"contents": contents}
-    
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        res_json = response.json()
-        if response.status_code == 200:
-            return res_json['candidates'][0]['content']['parts'][0]['text']
+        # تجهيز المؤشر للمفتاح التالي في الطلب القادم
+        st.session_state.key_index = (idx + 1) % len(API_KEYS_POOL)
+        
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={selected_key}"
+        headers = {"Content-Type": "application/json"}
+        
+        # بناء الذاكرة والسياق
+        contents = [{"role": "user", "parts": [{"text": st.session_state.current_case_prompt}]}]
+        for msg in st.session_state.messages:
+            role_type = "model" if msg["role"] == "patient" else "user"
+            contents.append({"role": role_type, "parts": [{"text": msg["text"]}]})
+        
+        # تجهيز المدخل الحالي
+        current_parts = []
+        if audio_path_input:
+            with open(audio_path_input, "rb") as audio_file:
+                audio_data = base64.b64encode(audio_file.read()).decode("utf-8")
+            current_parts.append({"inline_data": {"mime_type": "audio/wav", "data": audio_data}})
+            current_parts.append({"text": "ردي على سؤال الدكتور بصفتك المريضة بالعامية الليبية في سطر واحد قصير جداً ومباشر وطبيعي"})
         else:
-            error_msg = res_json.get('error', {}).get('message', 'Unknown API Error')
-            return f"Error: {error_msg}"
-    except Exception as e:
-        return f"Error: {str(e)}"
+            current_parts.append({"text": text_input})
+            
+        contents.append({"role": "user", "parts": current_parts})
+        payload = {"contents": contents}
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            res_json = response.json()
+            
+            if response.status_code == 200:
+                return res_json['candidates'][0]['content']['parts'][0]['text']
+            elif response.status_code == 429 or "quota" in str(res_json).lower():
+                # إذا واجه المفتاح مشكلة كوتا، يستمر الكود في الحلقة لتجربة المفتاح التالي فوراً
+                continue
+            else:
+                error_msg = res_json.get('error', {}).get('message', 'Unknown API Error')
+                return f"Error: {error_msg}"
+        except Exception as e:
+            # في حال حدوث مهلة أو خطأ شبكة، ننتقل للمفتاح التالي
+            continue
+            
+    return "RESOURCE_EXHAUSTED: جميع المفاتيح مشغولة حالياً بالكامل بسبب ضغط الطلاب، يرجى إعادة المحاولة بعد ثوانٍ بسيطة."
 
 # زر بدء حالة جديدة
 if st.button("🎬 بدء أخذ History لحالة جديدة"):
@@ -137,7 +151,9 @@ if st.session_state.case_started:
         with st.spinner("المريضة تستمع وتجيب..."):
             response_text = ask_gemini_direct(audio_path_input="user_voice.wav")
             
-            if "Error" not in response_text:
+            if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
+                st.error(response_text)
+            else:
                 tts_path = f"reply_{len(st.session_state.messages)}.mp3"
                 tts = gTTS(text=response_text, lang='ar', slow=False)
                 tts.save(tts_path)
@@ -145,15 +161,15 @@ if st.session_state.case_started:
                 st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب"})
                 st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
                 st.rerun()
-            else:
-                st.error(response_text)
 
     # ب) معالجة الكتابة
     if user_text_input:
         with st.spinner("المريضة تجيب..."):
             response_text = ask_gemini_direct(text_input=user_text_input)
             
-            if "Error" not in response_text:
+            if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
+                st.error(response_text)
+            else:
                 tts_path = f"reply_{len(st.session_state.messages)}.mp3"
                 tts = gTTS(text=response_text, lang='ar', slow=False)
                 tts.save(tts_path)
@@ -161,8 +177,6 @@ if st.session_state.case_started:
                 st.session_state.messages.append({"role": "doctor", "text": user_text_input})
                 st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
                 st.rerun()
-            else:
-                st.error(response_text)
 
 # 8. التقييم النهائي
 if st.session_state.case_started:
@@ -170,5 +184,8 @@ if st.session_state.case_started:
     if st.button("📊 إنهاء الحالة وطلب التقييم من البروفيسور"):
         with st.spinner("جاري تحليل الـ History وإعداد تقرير اللجنة الطبية..."):
             response_text = ask_gemini_direct(text_input="انتهي من تقمص الدور الآن، واكتب لي التقييم الطبي الكامل للحالة باللغة العربية الفصحى، واذكر ما هو التشخيص السري للحالة التي تم اختيارها، وما هي الأسئلة الهامة السريرية التي نسي الطبيب طرحها وما كان يجب عليه التركيز فيه.")
-            st.markdown("### 📝 تقرير تقييم اللجنة الطبية:")
-            st.info(response_text)
+            if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
+                st.error(response_text)
+            else:
+                st.markdown("### 📝 تقرير تقييم اللجنة الطبية:")
+                st.info(response_text)
