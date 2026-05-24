@@ -11,7 +11,7 @@ st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط ع
 # 2. حقن مفتاح الـ API الخاص بك
 GEMINI_API_KEY = "AIzaSyCEfS8-uK42rx0AgZP8711a6M9TCXRPiZw"
 
-# 3. الـ System Prompt الطبي لتوجيه المريضة بلهجة ليبية/عربية عامية
+# 3. الـ System Prompt الطبي لتوجيه المريضة بلهجة عامية
 SYSTEM_PROMPT = """
 You are acting as a medical simulation bot for a 4th-year medical student practicing OB/GYN history taking. 
 Your role is to simulate a Libyan/Arab pregnant or gynecological patient.
@@ -29,23 +29,24 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "case_started" not in st.session_state:
     st.session_state.case_started = False
+if "last_processed_audio" not in st.session_state:
+    st.session_state.last_processed_audio = None
 
 def ask_gemini_audio(audio_path_input=None, text_input=None):
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        # استخدام الموديل الأحدث المتوافق 100% مع البيئة الحالية
         model = genai.GenerativeModel("gemini-2.5-flash")
         
-        # بناء الذاكرة والسياق يدوياً لضمان الاستقرار
+        # بناء الذاكرة والسياق يدوياً
         full_contents = [{"role": "user", "parts": [SYSTEM_PROMPT]}]
         for msg in st.session_state.messages:
             role_type = "model" if msg["role"] == "patient" else "user"
             full_contents.append({"role": role_type, "parts": [msg["text"]]})
         
-        # إضافة المدخل الحالي (صوت أو نص)
+        # إضافة المدخل الحالي
         if audio_path_input:
             uploaded_audio = genai.upload_file(audio_path_input)
-            full_contents.append({"role": "user", "parts": [uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد قصير جداً"]})
+            full_contents.append({"role": "user", "parts": [uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد قصير جداً ومباشر"]])
             response = model.generate_content(full_contents)
             genai.delete_file(uploaded_audio.name)
         else:
@@ -60,9 +61,9 @@ def ask_gemini_audio(audio_path_input=None, text_input=None):
 if st.button("🎬 دخول مريضة جديدة العيادة"):
     st.session_state.messages = []
     st.session_state.case_started = True
+    st.session_state.last_processed_audio = None
     
     with st.spinner("المريضة تدخل الآن..."):
-        # تهيئة الطلب الأول نصياً لتنطلق المريضة بالشكوى
         genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content([SYSTEM_PROMPT, "ابدئي الحالة واشتكي من العرض الرئيسي بلهجة عامية في سطر واحد"])
@@ -74,13 +75,14 @@ if st.button("🎬 دخول مريضة جديدة العيادة"):
         
         st.session_state.messages.append({"role": "patient", "text": initial_reply, "audio_path": tts_path})
 
-# 5. عرض المحادثة الحالية
-for msg in st.session_state.messages:
+# 5. عرض المحادثة الحالية بشكل منظم لتفادي الأخطاء البرمجية
+for index, msg in enumerate(st.session_state.messages):
     if msg["role"] == "patient":
         with st.chat_message("user", avatar="🤰"):
             st.write(msg["text"])
             if "audio_path" in msg and os.path.exists(msg["audio_path"]):
-                st.audio(msg["audio_path"], autoplay=True) # تفعيل التشغيل التلقائي لصوت المريضة
+                # إضافة key فريد لكل عنصر صوتي لحل مشكلة السيرفر تماماً
+                st.audio(msg["audio_path"], autoplay=(index == len(st.session_state.messages)-1), key=f"audio_key_{index}")
     else:
         with st.chat_message("assistant", avatar="👨‍⚕️"):
             st.write(msg["text"])
@@ -90,14 +92,16 @@ if st.session_state.case_started:
     st.write("---")
     st.subheader("🎙️ تحدث مع المريضة مباشرة:")
     
-    # استخدام مسجل الصوت الافتراضي للمتصفح (HTML5 Audio Input)
-    audio_value = st.audio_input("اضغط على زر المايك واسأل المريضة (مثال: ما اسمك؟ كم عمرك؟ شو يوجع فيك؟)")
+    # مسجل الصوت الافتراضي للمتصفح
+    audio_value = st.audio_input("اضغط على زر المايك واسأل المريضة (ما اسمك؟ كم عمرك؟ شو يوجع فيك؟)")
     
     # خيار كتابي سريع للاحتياط
     user_text_input = st.chat_input("أو اكتب سؤالك هنا...")
 
-    # أ) معالجة الصوت التلقائي بمجرد انتهاء الطالب من الكلام
-    if audio_value:
+    # أ) معالجة الصوت التلقائي وتفادي التكرار
+    if audio_value and audio_value != st.session_state.last_processed_audio:
+        st.session_state.last_processed_audio = audio_value
+        
         with open("user_voice.wav", "wb") as f:
             f.write(audio_value.read())
             
@@ -128,7 +132,8 @@ if st.session_state.case_started:
             st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
             st.rerun()
 
-    # 7. التقييم النهائي
+# 7. التقييم النهائي
+if st.session_state.case_started:
     st.write("---")
     if st.button("📊 إنهاء الحالة وطلب التقييم من البروفيسور"):
         with st.spinner("جاري إعداد تقرير اللجنة الطبية..."):
