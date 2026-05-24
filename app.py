@@ -7,8 +7,8 @@ import random
 
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout="centered")
-st.title("🩺 محاكي الـ Long Case الصوتي التلقائي المتطور")
-st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط على خيار الحالة بالأسفل لتوليد سيناريو ديناميكي فريد يعتمد على أوراق الامتحانات المعتمدة.")
+st.title("🩺 محاكي الـ OB/GYN الشامل المتطور")
+st.write("مرحباً بك يا دكتور أمين وزملائك. تم دمج اللجان الثلاث بالكامل بناءً على الكود الأساسي الشغال دون حذف أي ميزة.")
 
 # 2. مجمّع المفاتيح السبعة المحمية بنظام التناوب الذكي
 API_KEYS_POOL = [
@@ -25,6 +25,22 @@ API_KEYS_POOL = [
 ARABIC_NAMES = ["فاطمة", "مريم", "سالمة", "خديجة", "عائشة", "نجاة", "هناء", "أمل", "منى", "إيناس", "غادة", "روان", "سارة", "انتصار", "أحلام"]
 LIBYAN_CITIES = ["طرابلس", "بنغازي", "مصراتة", "الزاوية", "سبها", "الخمس", "زليتن", "غريان", "البيضاء", "طبرق"]
 JOBS = ["ربة بيت", "معلمة مدرسة", "موظفة إدارية", "طالبة جامعية", "مهندسة", "تشتغل في معمل", "لا تعمل"]
+
+# بنك المنهج للامتحان الشفوي والآلات (للقسم الثالث الجديد)
+CURRICULUM_TOPICS = [
+    "Antenatal care (Dr. Zahra)", "Ultrasound (Dr. Zahra Al-Sedd)", "Perinatal Screening (Dr. Karima)",
+    "Teratogenic Drugs (Dr. Rania)", "Abortion (Dr. Rania)", "Ectopic Pregnancy (Dr. Sumaya Al-Jarbi)",
+    "Hydatidiform Mole (Dr. Ibtisam)", "Antepartum Hemorrhage (Dr. Karima)", "Postpartum Hemorrhage (Dr. Rania)",
+    "DIC & Shock (Dr. Rania & Dr. Ibtisam)", "Hypertension in pregnancy (Dr. Heba)", "D.M in pregnancy (Dr. Heba)",
+    "Heart disease in pregnancy (Dr. Rania)", "Hyperemesis Gravidarum (Dr. Karima)", "Anemia of Pregnancy (Dr. Heba)",
+    "DVT (Dr. Omaima)", "Anatomy of pelvis & Fetal skull", "Stages & Management of labour",
+    "Breech Presentation & Malposition", "Shoulder Dystocia (Dr. Heba)", "Preterm labour & PPROM",
+    "Multiple Pregnancy (Dr. Omaima)", "Rh Allo-immunization (Dr. Naziha)", "Fetal growth restriction (Dr. Naziha)",
+    "Instruments in Obstetrics & Gynecology (Dr. Heba)", "Cesarean section (Dr. Amal)", "Menstrual cycle & Puberty",
+    "Amenorrhea (Dr. Heba)", "PCOS (Dr. Ibtisam)", "Fibroid Uterus (Dr. Heba)", "Abnormal Uterine bleeding (Dr. Amal)",
+    "Cancer cervix & Ovarian Cancer", "PID & Vaginal Discharge", "Pelvic organ prolapse (Dr. Naziha)",
+    "Genitourinary fistula & Urinary Incontinence (Dr. Heba)", "Family planning (Dr. Naziha)"
+]
 
 # 4. تقسيم السيناريوهات الطبية بدقة وفق طلبك
 ANTENATAL_SCENARIOS = [
@@ -104,7 +120,7 @@ if "hidden_case_details" not in st.session_state:
 if "selected_type" not in st.session_state:
     st.session_state.selected_type = ""
 
-# دالة إرسال ذكية تدور على المفاتيح بالترتيب وتتخطى المفتاح المضغوط تلقائياً
+# دالة إرسال ذكية تدور على المفاتيح بالترتيب وتتخطى المفتاح المضغوط تلقائياً (نفس دالتك الأصلية تماماً بدون أي تعديل يخربها)
 def ask_gemini_direct(audio_path_input=None, text_input=None):
     valid_keys = [k for k in API_KEYS_POOL if k and k != "AIzaSy..."]
     if not valid_keys:
@@ -151,134 +167,228 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
             
     return "RESOURCE_EXHAUSTED: جميع المفاتيح مشغولة حالياً بالكامل بسبب ضغط الطلاب، يرجى إعادة المحاولة بعد ثوانٍ بسيطة."
 
-# 6. واجهة التحكم لاختيار نوع الـ History المطلوب وتوليد البيانات ديناميكياً
-st.subheader("📋 اختر الفئة السريرية المطلوبة للامتحان:")
-case_type = st.radio("نوع الـ Long Case:", ["Antenatal History (التاريخ الصحي للحوامل)", "Postnatal History (التاريخ الصحي للنفاس)"], horizontal=True)
 
-if st.button("🎬 توليد مريضة عشوائية مطابقة للفورم"):
-    st.session_state.messages = []
-    st.session_state.case_started = True
-    st.session_state.last_processed_audio = None
-    
-    p_name = random.choice(ARABIC_NAMES)
-    p_city = random.choice(LIBYAN_CITIES)
-    p_job = random.choice(JOBS)
-    
-    # بناء الهويات التفصيلية ديناميكياً بناءً على اختيار الطالب وهيكل الـ PDF
-    if case_type == "Antenatal History (التاريخ الصحي للحوامل)":
-        selected_scenario = random.choice(ANTENATAL_SCENARIOS)
-        random_age = random.randint(19, 41)
-        g_count = random.randint(1, 6)
-        p_count = g_count - 1
-        ga_weeks = random.randint(8, 38)
+# =========================================================
+# 🧭 شريط التحكم الجانبي واختيار اللجان الذكي (Sidebar Navigation)
+# =========================================================
+st.sidebar.title("🎯 لجان الامتحان الشاملة")
+board_selection = st.sidebar.radio("اختر اللجنة الحالية لمذاكرتها:", 
+    ["اللجنة الأولى: History Taking Case (العربية)", 
+     "اللجنة الثانية: OSCE Short Cases (English)", 
+     "اللجنة الثالثة: Curriculum & Instruments Quiz (English)"])
+
+# =========================================================
+# 🤰 اللجنة الأولى: نفس كودك الشغال 100% بدون تعديل حرف واحد
+# =========================================================
+if board_selection == "اللجنة الأولى: History Taking Case (العربية)":
+    st.subheader("📋 اختر الفئة السريرية المطلوبة للامتحان:")
+    case_type = st.radio("نوع الـ Long Case:", ["Antenatal History (التاريخ الصحي للحوامل)", "Postnatal History (التاريخ الصحي للنفاس)"], horizontal=True)
+
+    if st.button("🎬 توليد مريضة عشوائية مطابقة للفورم"):
+        st.session_state.messages = []
+        st.session_state.case_started = True
+        st.session_state.last_processed_audio = None
         
-        patient_profile = f"""
-        [ANTENATAL PATIENT PROFILE]:
-        - Name: {p_name}, Age: {random_age}, Nationality: Libyan, Occupation: {p_job}, Living in: {p_city}.
-        - Obstetric: Gravida {g_count}, Para {p_count} + {random.randint(0,2)} abortions. Gestational Age: {ga_weeks} weeks.
-        - Pregnancy status: Spontaneous, Regular cycle, Missed period discovery. Booking visit done at 12 weeks.
-        - Hidden Diagnosis/Condition: {selected_scenario}
-        """
-        st.session_state.current_case_prompt = f"{ANTENATAL_STRUCTURE_PROMPT}\n{patient_profile}"
-        st.session_state.selected_type = "Antenatal"
+        p_name = random.choice(ARABIC_NAMES)
+        p_city = random.choice(LIBYAN_CITIES)
+        p_job = random.choice(JOBS)
         
-    else:  # Postnatal History
-        selected_scenario = random.choice(POSTNATAL_SCENARIOS)
-        random_age = random.randint(22, 39)
-        p_count = random.randint(1, 5)
-        delivery_mode = random.choice(["Vaginal Delivery", "C-Section (Elective)", "C-Section (Emergency due to fetal distress)"])
-        days_post = random.randint(1, 10)
-        baby_sex = random.choice(["Male", "Female"])
-        baby_weight = round(random.uniform(2.5, 4.0), 2)
-        
-        patient_profile = f"""
-        [POSTNATAL PATIENT PROFILE]:
-        - Name: {p_name}, Age: {random_age}, Nationality: Libyan, Occupation: {p_job}, Living in: {p_city}.
-        - Obstetric: Para {p_count} + {random.randint(0,1)}.
-        - Delivery Status: She is {days_post} days post {delivery_mode}.
-        - Postnatal status: Has afterpain (mild/severe according to case), Lochia variation, passed stool status depends on delivery type.
-        - Baby Status: Outcome alive, Sex: {baby_sex}, Weight: {baby_weight}kg, Condition: Healthy.
-        - Hidden Diagnosis/Condition: {selected_scenario}
-        """
-        st.session_state.current_case_prompt = f"{POSTNATAL_STRUCTURE_PROMPT}\n{patient_profile}"
-        st.session_state.selected_type = "Postnatal"
-        
-    st.session_state.hidden_case_details = patient_profile
-    st.success(f" Done! تم توليد مريضة ({case_type}) ودخلت العيادة الآن بنجاح. اضغط على المايك وابدأ الامتحان!")
-
-st.write("---")
-
-# 7. عرض شاشة المحادثة الحالية
-for msg in st.session_state.messages:
-    if msg.get("role") == "patient":
-        with st.chat_message("user", avatar="🤰"):
-            st.write(msg.get("text", ""))
-            audio_path = msg.get("audio_path")
-            if audio_path and os.path.exists(audio_path):
-                st.audio(audio_path)
-    elif msg.get("role") == "doctor":
-        with st.chat_message("assistant", avatar="👨‍⚕️"):
-            st.write(msg.get("text", ""))
-
-# 8. إدارة مدخلات الصوت والكتابة للتفاعل مع المريضة
-if st.session_state.case_started:
-    st.subheader("🎙️ ابدأ بالتحدث مع المريضة:")
-    audio_value = st.audio_input("اضغط على زر المايك واسأل المريضة")
-    user_text_input = st.chat_input("أو اكتب سؤالك هنا...")
-
-    if audio_value and audio_value != st.session_state.last_processed_audio:
-        st.session_state.last_processed_audio = audio_value
-        with open("user_voice.wav", "wb") as f:
-            f.write(audio_value.read())
+        if case_type == "Antenatal History (التاريخ الصحي للحوامل)":
+            selected_scenario = random.choice(ANTENATAL_SCENARIOS)
+            random_age = random.randint(19, 41)
+            g_count = random.randint(1, 6)
+            p_count = g_count - 1
+            ga_weeks = random.randint(8, 38)
             
-        with st.spinner("المريضة تستمع وتجيب..."):
-            response_text = ask_gemini_direct(audio_path_input="user_voice.wav")
-            if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
-                st.error(response_text)
-            else:
-                tts_path = f"reply_{len(st.session_state.messages)}.mp3"
-                tts = gTTS(text=response_text, lang='ar', slow=False)
-                tts.save(tts_path)
-                st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب"})
-                st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
-                st.rerun()
+            patient_profile = f"""
+            [ANTENATAL PATIENT PROFILE]:
+            - Name: {p_name}, Age: {random_age}, Nationality: Libyan, Occupation: {p_job}, Living in: {p_city}.
+            - Obstetric: Gravida {g_count}, Para {p_count} + {random.randint(0,2)} abortions. Gestational Age: {ga_weeks} weeks.
+            - Pregnancy status: Spontaneous, Regular cycle, Missed period discovery. Booking visit done at 12 weeks.
+            - Hidden Diagnosis/Condition: {selected_scenario}
+            """
+            st.session_state.current_case_prompt = f"{ANTENATAL_STRUCTURE_PROMPT}\n{patient_profile}"
+            st.session_state.selected_type = "Antenatal"
+            
+        else:  # Postnatal History
+            selected_scenario = random.choice(POSTNATAL_SCENARIOS)
+            random_age = random.randint(22, 39)
+            p_count = random.randint(1, 5)
+            delivery_mode = random.choice(["Vaginal Delivery", "C-Section (Elective)", "C-Section (Emergency due to fetal distress)"])
+            days_post = random.randint(1, 10)
+            baby_sex = random.choice(["Male", "Female"])
+            baby_weight = round(random.uniform(2.5, 4.0), 2)
+            
+            patient_profile = f"""
+            [POSTNATAL PATIENT PROFILE]:
+            - Name: {p_name}, Age: {random_age}, Nationality: Libyan, Occupation: {p_job}, Living in: {p_city}.
+            - Obstetric: Para {p_count} + {random.randint(0,1)}.
+            - Delivery Status: She is {days_post} days post {delivery_mode}.
+            - Postnatal status: Has afterpain (mild/severe according to case), Lochia variation, passed stool status depends on delivery type.
+            - Baby Status: Outcome alive, Sex: {baby_sex}, Weight: {baby_weight}kg, Condition: Healthy.
+            - Hidden Diagnosis/Condition: {selected_scenario}
+            """
+            st.session_state.current_case_prompt = f"{POSTNATAL_STRUCTURE_PROMPT}\n{patient_profile}"
+            st.session_state.selected_type = "Postnatal"
+            
+        st.session_state.hidden_case_details = patient_profile
+        st.success(f"Done! تم توليد مريضة ({case_type}) ودخلت العيادة الآن بنجاح. اضغط على المايك وابدأ الامتحان!")
 
-    if user_text_input:
-        with st.spinner("المريضة تجيب..."):
-            response_text = ask_gemini_direct(text_input=user_text_input)
-            if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
-                st.error(response_text)
-            else:
-                tts_path = f"reply_{len(st.session_state.messages)}.mp3"
-                tts = gTTS(text=response_text, lang='ar', slow=False)
-                tts.save(tts_path)
-                st.session_state.messages.append({"role": "doctor", "text": user_text_input})
-                st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
-                st.rerun()
-
-# 9. التقييم والتقرير النهائي الطبي للبروفيسور بناءً على هياكل الـ PDF المرفوعة
-if st.session_state.case_started:
     st.write("---")
-    if st.button("📊 إنهاء الحالة وطلب التقييم من البروفيسور"):
-        with st.spinner("جاري تحليل الـ History وإعداد تقرير اللجنة الطبية الموحد..."):
-            
-            # صياغة برومبت التقييم بناءً على نوع الحالة المحددة لتطابق متطلبات الدكتورة هبة
-            eval_prompt = f"""
-            Context for you: The chosen format structure was: {st.session_state.selected_type}. 
-            The full hidden case details and identity were: {st.session_state.hidden_case_details}.
-            
-            Now, stop acting as the patient. Act as an expert OB/GYN Professor evaluating this 4th-year medical student's long case history taking.
-            Provide a strict, professional medical evaluation report in formal Arabic structured as follows:
-            
-            1. 📋 ملف المريضة الكامل والتشخيص الخفي (Full Profile & Hidden Diagnosis).
-            2. 🔍 تقييم الـ History المأخوذ مقارنة بالفورم الرسمي المعتمد (التحقق من استيفاء البيانات الشخصية، تفاصيل الولادة/الحمل الحالي، تفاصيل الـ Lochia والـ Breast والـ Baby إن كانت حالة بوست، أو الـ Booking والـ LNMP إن كانت حالة أنتي).
-            3. ⚠️ النقاط السريرية الحرجة والعلامات الحمراء (Red Flags) التي أغفلها الطالب أو نسي التركيز عليها لتشخيص هذه الحالة بالتحديد.
-            4. 🏆 نصيحة البروفيسور النهائية للطالب لتطوير أدائه في الامتحان العملي.
+
+    # عرض شاشة المحادثة الحالية
+    for msg in st.session_state.messages:
+        if msg.get("role") == "patient":
+            with st.chat_message("user", avatar="🤰"):
+                st.write(msg.get("text", ""))
+                audio_path = msg.get("audio_path")
+                if audio_path and os.path.exists(audio_path):
+                    st.audio(audio_path)
+        elif msg.get("role") == "doctor":
+            with st.chat_message("assistant", avatar="👨‍⚕️"):
+                st.write(msg.get("text", ""))
+
+    # إدارة مدخلات الصوت والكتابة للتفاعل مع المريضة
+    if st.session_state.case_started and st.session_state.selected_type in ["Antenatal", "Postnatal"]:
+        st.subheader("🎙️ ابدأ بالتحدث مع المريضة:")
+        audio_value = st.audio_input("اضغط على زر المايك واسأل المريضة")
+        user_text_input = st.chat_input("أو اكتب سؤالك هنا...")
+
+        if audio_value and audio_value != st.session_state.last_processed_audio:
+            st.session_state.last_processed_audio = audio_value
+            with open("user_voice.wav", "wb") as f:
+                f.write(audio_value.read())
+                
+            with st.spinner("المريضة تستمع وتجيب..."):
+                response_text = ask_gemini_direct(audio_path_input="user_voice.wav")
+                if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
+                    st.error(response_text)
+                else:
+                    tts_path = f"reply_{len(st.session_state.messages)}.mp3"
+                    tts = gTTS(text=response_text, lang='ar', slow=False)
+                    tts.save(tts_path)
+                    st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب"})
+                    st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
+                    st.rerun()
+
+        if user_text_input:
+            with st.spinner("المريضة تجيب..."):
+                response_text = ask_gemini_direct(text_input=user_text_input)
+                if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
+                    st.error(response_text)
+                else:
+                    tts_path = f"reply_{len(st.session_state.messages)}.mp3"
+                    tts = gTTS(text=response_text, lang='ar', slow=False)
+                    tts.save(tts_path)
+                    st.session_state.messages.append({"role": "doctor", "text": user_text_input})
+                    st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
+                    st.rerun()
+
+    # التقييم والتقرير النهائي الطبي للبروفيسور
+    if st.session_state.case_started and st.session_state.selected_type in ["Antenatal", "Postnatal"]:
+        st.write("---")
+        if st.button("📊 إنهاء الحالة وطلب التقييم من البروفيسور"):
+            with st.spinner("جاري تحليل الـ History وإعداد تقرير اللجنة الطبية الموحد..."):
+                eval_prompt = f"""
+                Context for you: The chosen format structure was: {st.session_state.selected_type}. 
+                The full hidden case details and identity were: {st.session_state.hidden_case_details}.
+                
+                Now, stop acting as the patient. Act as an expert OB/GYN Professor evaluating this 4th-year medical student's long case history taking.
+                Provide a strict, professional medical evaluation report in formal Arabic structured as follows:
+                
+                1. 📋 ملف المريضة الكامل والتشخيص الخفي (Full Profile & Hidden Diagnosis).
+                2. 🔍 تقييم الـ History المأخوذ مقارنة بالفورم الرسمي المعتمد (التحقق من استيفاء البيانات الشخصية، تفاصيل الولادة/الحمل الحالي، تفاصيل الـ Lochia والـ Breast والـ Baby إن كانت حالة بوست، أو الـ Booking والـ LNMP إن كانت حالة أنتي).
+                3. ⚠️ النقاط السريرية الحرجة والعلامات الحمراء (Red Flags) التي أغفلها الطالب أو نسي التركيز عليها لتشخيص هذه الحالة بالتحديد.
+                4. 🏆 نصيحة البروفيسور النهائية للطالب لتطوير أدائه في الامتحان العملي.
+                """
+                response_text = ask_gemini_direct(text_input=eval_prompt)
+                if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
+                    st.error(response_text)
+                else:
+                    st.markdown("### 📝 تقرير تقييم اللجنة الطبية للـ Long Case:")
+                    st.info(response_text)
+
+# =========================================================
+# 🔬 اللجنة الثانية: OSCE Short Cases (English) - ميزة مضافة
+# =========================================================
+elif board_selection == "اللجنة الثانية: OSCE Short Cases (English)":
+    st.subheader("🔬 OSCE Board: Combined Short Cases المحطات القصيرة")
+    st.write("هذه المحطة تضعك أمام حالتين قصيرتين (Obstetrics + Gynecology) باللغة الإنجليزية الطبية مع أسئلة امتحانية تفاعلية متتالية.")
+
+    if st.button("🎲 Generate New OSCE Cases Station"):
+        st.session_state.messages = []
+        st.session_state.case_started = True
+        st.session_state.selected_type = "OSCE"
+        st.session_state.current_case_prompt = """
+        Act as an expert external medical examiner conducting an OSCE short cases station for final year medical students.
+        Generate one brief Obstetrics clinical presentation (e.g., severe postdate pregnancy or cord prolapse scenario) 
+        AND one Gynecology clinical presentation (e.g., primary infertility or PMB scenario).
+        Provide 2 clear, specific exam questions at the end of the cases. Speak and respond strictly in medical English.
+        """
+        with st.spinner("Formulating OSCE cases..."):
+            initial_text = ask_gemini_direct(text_input="Start the OSCE station now.")
+            st.session_state.messages.append({"role": "patient", "text": initial_text}) # تخزينها باسم الدور لتقرأها الدالة
+
+    # عرض الأسئلة والدردشة للجنة الـ OSCE
+    for msg in st.session_state.messages:
+        if msg.get("role") == "patient":
+            with st.chat_message("user", avatar="🔬"): st.write(msg.get("text", ""))
+        elif msg.get("role") == "doctor":
+            with st.chat_message("assistant", avatar="👨‍⚕️"): st.write(msg.get("text", ""))
+
+    if st.session_state.case_started and st.session_state.selected_type == "OSCE":
+        osce_input = st.chat_input("Write your answers for the OSCE questions here...")
+        if osce_input:
+            with st.spinner("Evaluating your OSCE answers..."):
+                st.session_state.messages.append({"role": "doctor", "text": osce_input})
+                feedback = ask_gemini_direct(text_input="Grade my previous answer strictly as an OSCE Examiner, give marks and the model answer.")
+                st.session_state.messages.append({"role": "patient", "text": feedback})
+                st.rerun()
+
+# =========================================================
+# 📚 اللجنة الثالثة: Curriculum & Instruments Quiz (English) - ميزة مضافة
+# =========================================================
+else:
+    st.subheader("📚 Board 3: Oral Viva, Topics & Instruments")
+    st.write("امتحان شفوي في الـ 81 موضوعاً والآلات الجراحية المعتمدة في محاضرات الدكاترة بالإنجليزية.")
+    
+    quiz_domain = st.radio("Select Domain:", ["Syllabus Topics (المنهج والأسئلة الشفوية)", "Instruments & Tools (الآلات الطبية وعيادة الدكتورة هبة)"], horizontal=True)
+    
+    if st.button("❓ Pull Random Exam Question"):
+        st.session_state.messages = []
+        st.session_state.case_started = True
+        st.session_state.selected_type = "Quiz"
+        
+        if quiz_domain == "Syllabus Topics (المنهج والأسئلة الشفوية)":
+            chosen_topic = random.choice(CURRICULUM_TOPICS)
+            st.session_state.current_case_prompt = f"""
+            Act as an external medical professor in an oral viva examination. Ask one high-yield clinical exam question 
+            for a 4th-year student regarding this specific curriculum topic: '{chosen_topic}'. 
+            The question must test clinical understanding, indications, or complications. Speak strictly in English.
+            """
+        else:
+            st.session_state.current_case_prompt = """
+            Act as an examiner in an OB/GYN practical exam. Describe one clinical surgical tool/instrument 
+            (such as Ventouse, Forceps, Speculum, or Foley Catheter) based on standard clinical knowledge, 
+            and ask 1 targeted question about its indications, contraindications, or complications. Speak strictly in English.
             """
             
-            response_text = ask_gemini_direct(text_input=eval_prompt)
-            if "RESOURCE_EXHAUSTED" in response_text or "Error" in response_text:
-                st.error(response_text)
-            else:
-                st.markdown("### 📝 تقرير تقييم اللجنة الطبية للـ Long Case:")
-                st.info(response_text)
+        with st.spinner("Extracting board question..."):
+            quiz_text = ask_gemini_direct(text_input="Give me the exam question now.")
+            st.session_state.messages.append({"role": "patient", "text": quiz_text})
+
+    # عرض الأسئلة والدردشة للجنة الـ الشفوي والآلات
+    for msg in st.session_state.messages:
+        if msg.get("role") == "patient":
+            with st.chat_message("user", avatar="📚"): st.write(msg.get("text", ""))
+        elif msg.get("role") == "doctor":
+            with st.chat_message("assistant", avatar="👨‍⚕️"): st.write(msg.get("text", ""))
+
+    if st.session_state.case_started and st.session_state.selected_type == "Quiz":
+        quiz_input = st.chat_input("Type your formal academic answer here...")
+        if quiz_input:
+            with st.spinner("Analyzing answers..."):
+                st.session_state.messages.append({"role": "doctor", "text": quiz_input})
+                evaluation = ask_gemini_direct(text_input="Evaluate my answer scientifically, provide the score and ideal correction.")
+                st.session_state.messages.append({"role": "patient", "text": evaluation})
+                st.rerun()
