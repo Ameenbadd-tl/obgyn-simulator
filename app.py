@@ -61,10 +61,10 @@ def ask_gemini_audio(audio_path_input=None, text_input=None):
             role_type = "model" if msg["role"] == "patient" else "user"
             full_contents.append({"role": role_type, "parts": [msg["text"]]})
         
-        # إضافة المدخل الحالي (صوت أو نص)
+        # إضافة المدخل الحالي (صوت أو نص) مع التأكد التام من صحة الأقواس
         if audio_path_input:
             uploaded_audio = genai.upload_file(audio_path_input)
-            full_contents.append({"role": "user", "parts": [uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية في سطر واحد قصير جداً ومباشر"]])
+            full_contents.append({"role": "user", "parts": [uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد قصير جداً ومباشر"]})
             response = model.generate_content(full_contents)
             genai.delete_file(uploaded_audio.name)
         else:
@@ -93,7 +93,6 @@ for index, msg in enumerate(st.session_state.messages):
         with st.chat_message("user", avatar="🤰"):
             st.write(msg["text"])
             if "audio_path" in msg and os.path.exists(msg["audio_path"]):
-                # تم تبسيط السطر وإزالة التحكم الديناميكي بـ autoplay لمنع أخطاء السيرفر
                 st.audio(msg["audio_path"], key=f"audio_key_{index}")
     else:
         with st.chat_message("assistant", avatar="👨‍⚕️"):
@@ -110,7 +109,7 @@ if st.session_state.case_started:
     # خيار كتابي سريع للاحتياط
     user_text_input = st.chat_input("أو اكتب سؤالك هنا إذا كنت لا تفضل الصوت...")
 
-    # أ) معالجة الصوت التلقائي عند مبادرة الطبيب بالحديث
+    # أ) معالجة الصوت التلقائي عند مبادرة الطبيب بالحديث (تم إصلاح السطر 112 هنا أيضاً)
     if audio_value and audio_value != st.session_state.last_processed_audio:
         st.session_state.last_processed_audio = audio_value
         
@@ -131,7 +130,7 @@ if st.session_state.case_started:
             else:
                 st.error(response_text)
 
-    # b) معالجة الكتابة
+    # ب) معالجة الكتابة
     if user_text_input:
         with st.spinner("المريضة تجيب..."):
             response_text = ask_gemini_audio(text_input=user_text_input)
