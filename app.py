@@ -13,12 +13,12 @@ st.write("مرحباً بك يا دكتور أمين وزملائك في الم�
 # 2. مجمّع المفاتيح السبعة المحمية بنظام التناوب الذكي
 API_KEYS_POOL = [
     "AIzaSyCTMSL1mCU2J3W0vEueR0n1mM3qd5-DpQE",
-    "AIzaSyBXxYZNFlVmpKf1f_oSgWqYVfgC7_spNCU",
-    "AIzaSyAA5E6EziXwrm8U3fFFCPkH-s9If3tP674",
-    "AIzaSyAn8q3hwFn0K0i_OTOVHdhdTxR5j0MHUyw",
-    "AIzaSyC0uiwlDJW_STJL6i9Edl1gDdOiEE63MFc",
-    "AIzaSyBHtq_8zblQ52ca93jpGDrhDWwaEll0BuM",
-    "AIzaSyAyr2tZVOcYgoCOfF1kXCnPCD41PGSEjxI"
+    "AIzaSyCDcFCqFkVV-qA9wk8rXAEWW10VrDNvMig",
+    "AIzaSyB7tmDNDxgpIefg_-hud2vpAP5sOrByQxs",
+    "AIzaSyCk8izLy73ACSWAqxq1XAPMBe0QKzENPWo",
+    "AIzaSyAxtThGXNx3RfHv9bWHO_nxrRuILqeg-_4",
+    "AIzaSyATL8FABjR8ECyUyx-rUVAuEHTsBCfrBEg",
+    "AIzaSyDb5Thpjzk2YjtmNUiecR4NzxQzsJaelb4"
 ]
 
 # بنك المواضيع المعتمدة (81 موضوعاً) لتغذية السيرفر بالأسئلة والمناهج
