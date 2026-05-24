@@ -32,7 +32,8 @@ if "chat_session" not in st.session_state:
 
 # زر بدء حالة جديدة
 if st.button("🎬 ابدأ حالة سريرية جديدة (مريضة جديدة)"):
-    model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
+    # تم التعديل هنا بإضافة -latest لحل مشكلة الـ NotFound بشكل جذري
+    model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest", system_instruction=SYSTEM_PROMPT)
     st.session_state.chat_session = model.start_chat(history=[])
     st.session_state.messages = []
     
