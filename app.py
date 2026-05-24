@@ -9,12 +9,8 @@ st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout
 st.title("🩺 محاكي الـ Long Case الصوتي التلقائي")
 st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك.")
 
-# 2. جلب مفتاح الـ API بشكل آمن من الـ Secrets الخاصة بـ Streamlit
-if "GEMINI_API_KEY" in st.secrets:
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-else:
-    st.error("الرجاء إضافة مفتاح الـ GEMINI_API_KEY في إعدادات Secrets الخاصة بـ Streamlit أولاً!")
-    st.stop()
+# 2. حقن مفتاح الـ API الجديد مباشرة لتجنب كاش السيرفر القديم
+GEMINI_API_KEY = "AIzaSyCmqF22vQBDXQ_Tx8an9WxpSTN6Z9bnA9s"
 
 # 3. قائمة السيناريوهات المتنوعة لضمان عشوائية الحالات في كل مرة
 SCENARIOS = [
@@ -91,12 +87,13 @@ if st.button("🎬 بدء أخذ History لحالة جديدة"):
     
     st.success("دخلت المريضة العيادة وجلست على الكرسي وهي صامتة الآن وتنتظر سؤالك. اضغط على المايك بالأسفل وابدأ بسؤالها!")
 
-# 6. عرض المحادثة الحالية بشكل منظم
+# 6. عرض المحادثة الحالية بشكل منظم (تمت صيانته لمنع الـ TypeError واختفاء الصوت)
 for index, msg in enumerate(st.session_state.messages):
     if msg["role"] == "patient":
         with st.chat_message("user", avatar="🤰"):
             st.write(msg["text"])
-            if "audio_path" in msg and os.path.exists(msg["audio_path"]):
+            # التأكد أولاً من أن المفتاح موجود والملف الفعلي متوفر على السيرفر قبل التشغيل
+            if "audio_path" in msg and msg["audio_path"] and os.path.exists(msg["audio_path"]):
                 st.audio(msg["audio_path"], key=f"audio_key_{index}")
     else:
         with st.chat_message("assistant", avatar="👨‍⚕️"):
@@ -125,7 +122,8 @@ if st.session_state.case_started:
                 tts = gTTS(text=response_text, lang='ar', slow=False)
                 tts.save(tts_path)
                 
-                st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب"})
+                # الطبيب ليس له ملف صوتي لحفظ مساحة السيرفر
+                st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب", "audio_path": None})
                 st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
                 st.rerun()
             else:
@@ -140,7 +138,7 @@ if st.session_state.case_started:
             tts = gTTS(text=response_text, lang='ar', slow=False)
             tts.save(tts_path)
             
-            st.session_state.messages.append({"role": "doctor", "text": user_text_input})
+            st.session_state.messages.append({"role": "doctor", "text": user_text_input, "audio_path": None})
             st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
             st.rerun()
 
