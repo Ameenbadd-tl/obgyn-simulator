@@ -7,7 +7,7 @@ import random
 
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout="centered")
-st.title("🩺 محاكي الـ Long Case الصوتي التلقائي")
+st.title("محاكي History 4th year 🩺")
 
 # 2. حماية مفتاح الـ API عبر الجانب الجانبي (Sidebar)
 st.sidebar.header("🔑 إعدادات الاتصال الآمن")
@@ -21,7 +21,7 @@ elif "GEMINI_API_KEY" in st.secrets:
 else:
     GEMINI_API_KEY = None
 
-st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك.")
+st.write("اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك.")
 
 # 3. قائمة السيناريوهات المتنوعة
 SCENARIOS = [
@@ -101,7 +101,7 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
         return f"Error: {str(e)}"
 
 # زر بدء حالة جديدة
-if st.button("🎬 بدء أخذ History لحالة جديدة"):
+if st.button("🎬 بدء في اخد history "):
     st.session_state.messages = []
     st.session_state.case_started = True
     st.session_state.last_processed_audio = None
