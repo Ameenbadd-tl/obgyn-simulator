@@ -100,16 +100,17 @@ if st.button("🎬 بدء أخذ History لحالة جديدة"):
     
     st.success("دخلت المريضة العيادة وجلست على الكرسي وهي صامتة الآن وتنتظر سؤالك. اضغط على المايك بالأسفل وابدأ بسؤالها!")
 
-# 6. عرض المحادثة الحالية (تم الفصل التام والكامل لمنع الـ TypeError نهائياً)
+# 6. عرض المحادثة الحالية (تمت الصيانة الشاملة هنا باستخدام دالة .get والتحقق الصارم لمنع أي انهيار)
 for index, msg in enumerate(st.session_state.messages):
-    if msg["role"] == "patient":
+    if msg.get("role") == "patient":
         with st.chat_message("user", avatar="🤰"):
-            st.write(msg["text"])
-            if "audio_path" in msg and msg["audio_path"] and os.path.exists(msg["audio_path"]):
-                st.audio(msg["audio_path"], key=f"audio_key_{index}")
-    elif msg["role"] == "doctor":
+            st.write(msg.get("text", ""))
+            audio_path = msg.get("audio_path")
+            if audio_path and os.path.exists(audio_path):
+                st.audio(audio_path, key=f"audio_key_{index}")
+    elif msg.get("role") == "doctor":
         with st.chat_message("assistant", avatar="👨‍⚕️"):
-            st.write(msg["text"])
+            st.write(msg.get("text", ""))
 
 # 7. التفاعل التلقائي عبر المايك المدمج
 if st.session_state.case_started:
