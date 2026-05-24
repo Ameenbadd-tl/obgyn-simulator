@@ -12,13 +12,13 @@ st.write(" اضغط على الزر بالأسفل ثم ابدأ أنت بالت
 
 # 2. مجمّع المفاتيح الذكي (API Keys Pool) لتوزيع الضغط ومنع التوقف
 API_KEYS_POOL = [
-    "AIzaSyD5IwqCmtkHYiG-7tUaKX-nBsKpGvzL6nA",
-    "AIzaSyD0gsQhz7PXQH9gZRRQWp7zCjr9ExW9n-E",
-    "AIzaSyDo97Pi1x0o8D0wbBbtUFkQCgg3hDrhf_I",
-    "AIzaSyATd6ZxjWIGgB-WNJzJm-hgLTrpAzE6Ypo",
-    "AIzaSyCdJiX4FBW6YqOZo2ia5KGSyubFpxij4d0",
-    "AIzaSyDMdZK-0njUm_Zzm4yONE-E4MLzgGdw4oQ",
-    "AIzaSyBX_0D2YMSQXpaos4KkkJ6H3GmUyjxzPPM"
+    "AIzaSyAyr2tZVOcYgoCOfF1kXCnPCD41PGSEjxI",
+    "AIzaSyBHtq_8zblQ52ca93jpGDrhDWwaEll0BuM",
+    "AIzaSyAn8q3hwFn0K0i_OTOVHdhdTxR5j0MHUyw",
+    "AIzaSyC0uiwlDJW_STJL6i9Edl1gDdOiEE63MFc",
+    "AIzaSyAA5E6EziXwrm8U3fFFCPkH-s9If3tP674",
+    "AIzaSyBXxYZNFlVmpKf1f_oSgWqYVfgC7_spNCU",
+    "AIzaSyCGXIIx3HIMC7GeFZFrcSmXpxZGgUG8K5Q"
 ]
 
 # 3. قائمة السيناريوهات المتنوعة لضمان عشوائية الحالات
