@@ -2,14 +2,13 @@ import streamlit as st
 import google.generativeai as genai
 from gtts import gTTS
 import os
-from streamlit_audio_recorder import audio_recorder
 
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Long Case Simulator", page_icon="🩺", layout="centered")
 st.title("🩺 محاكي امتحان الـ Long Case (نساء وولادة)")
-st.write("مرحباً بك يا دكتور أمين وزملائك. هذا المحاكي يضعكم في مواجهة حالة سريرية مخفية لأخذ الـ History صوتياً.")
+st.write("مرحباً بك يا دكتور أمين وزملائك. سجلوا أسئلتكم كفويس نوت على الموبايل وارفعوها هنا للتحدث مع المريضة.")
 
-# 2. حقن مفتاح الـ API الخاص بك مباشرة لتشغيل فوري
+# 2. حقن مفتاح الـ API الخاص بك مباشرة
 GEMINI_API_KEY = "AIzaSyCEfS8-uK42rx0AgZP8711a6M9TCXRPiZw"
 genai.configure(api_key=GEMINI_API_KEY)
 
@@ -37,7 +36,6 @@ if st.button("🎬 ابدأ حالة سريرية جديدة (مريضة جدي�
     st.session_state.chat_session = model.start_chat(history=[])
     st.session_state.messages = []
     
-    # جعل المريضة تبدأ بالشكوى الرئيسية فوراً
     with st.spinner("جاري دخول المريضة إلى العيادة..."):
         response = st.session_state.chat_session.send_message("ابدئي الحالة واشتكي من العرض الرئيسي بلهجة عامية في سطر واحد")
         
@@ -59,26 +57,26 @@ for index, msg in enumerate(st.session_state.messages):
         with st.chat_message("assistant", avatar="👨‍⚕️"):
             st.write(msg["text"])
 
-# 6. التفاعل الصوتي والكتابي مع المريضة
+# 6. التفاعل مع المريضة
 if st.session_state.chat_session:
     st.write("---")
-    st.subheader("🎙️ اسأل المريضة:")
+    st.subheader("🎙️ وجه سؤالك للمريضة:")
     
-    # مسجل الصوت المدمج في المتصفح
-    audio_bytes = audio_recorder(text="اضغط على المايك للتحدث، واضغط مرة أخرى للإرسال", energy_threshold=(-1.0, 1.0))
+    # ميزة رفع ملف صوتي مدمجة في الويب ومتوافقة مع كل الأجهزة
+    audio_file = st.file_uploader("ارفع تسجيل سؤالك الصوتي هنا (Record & Upload):", type=["wav", "mp3", "m4a", "ogg"])
     
-    # مربع نصي كخيار احتياطي في حال تعذر استخدام المايك
-    user_text_input = st.chat_input("أو اكتب سؤالك هنا إذا كنت لا تفضل الصوت...")
+    # مربع نصي كخيار احتياطي وسريع
+    user_text_input = st.chat_input("أو اكتب سؤالك هنا مباشرة...")
 
-    # أ) معالجة الإدخال الصوتي
-    if audio_bytes:
+    # أ) معالجة الملف الصوتي إذا تم رفعه
+    if audio_file is not None:
         with open("temp_user_voice.wav", "wb") as f:
-            f.write(audio_bytes)
+            f.write(audio_file.read())
         
-        with st.spinner("المريضة تستمع إليك وتفكر..."):
+        with st.spinner("المريضة تستمع وتجيب بصوتها..."):
             try:
                 # رفع الملف الصوتي لجمناي ليقوم بتحليله وفهمه مباشرة
-                uploaded_audio = genai.upload_file("temp_user_voice.wav", mime_type="audio/wav")
+                uploaded_audio = genai.upload_file("temp_user_voice.wav")
                 response = st.session_state.chat_session.send_message([uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد"])
                 
                 # تحويل رد المريضة النصي إلى ملف صوتي
@@ -86,21 +84,19 @@ if st.session_state.chat_session:
                 tts = gTTS(text=response.text, lang='ar', slow=False)
                 tts.save(tts_path)
                 
-                st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوتي من الطبيب"})
+                st.session_state.messages.append({"role": "doctor", "text": "🎤 تم إرسال سؤال صوتي"})
                 st.session_state.messages.append({"role": "patient", "text": response.text, "audio_path": tts_path})
                 
-                # تنظيف ملف جمناي المؤقت
                 genai.delete_file(uploaded_audio.name)
                 st.rerun()
             except Exception as e:
-                st.error("حدث خطأ أثناء معالجة الصوت، يرجى المحاولة مرة أخرى أو استخدام الكتابة.")
+                st.error("حدثت مشكلة صغيرة في قراءة الملف، جرب رفعه مجدداً أو استخدم الكتابة للسرعة.")
 
     # ب) معالجة الإدخال النصي
     if user_text_input:
         with st.spinner("المريضة تجيب..."):
             response = st.session_state.chat_session.send_message(user_text_input)
             
-            # تحويل الرد إلى صوت
             tts_path = f"reply_{len(st.session_state.messages)}.mp3"
             tts = gTTS(text=response.text, lang='ar', slow=False)
             tts.save(tts_path)
@@ -113,6 +109,6 @@ if st.session_state.chat_session:
     st.write("---")
     if st.button("📊 إنهاء الحالة وطلب التقييم من البروفيسور"):
         with st.spinner("جاري تحليل الـ History وإعداد تقرير اللجنة الطبية..."):
-            response = st.session_state.chat_session.send_message("انتهي من تقمص الدور الآن، واكتب لي التقييم الطبي الكامل للحالة باللغة العربية الفصحى الطبية، واذكر ما هو التشخيص السري، وما هي الأسئلة الهامة التي نسي الطلاب طرحها.")
+            response = st.session_state.chat_session.send_message("انتهي من تقمص الدور الآن، واكتب لي التقييم الطبي الكامل للحالة باللغة العربية الفصحى الطبية، واذكر ما هو التشخيص السري، وما هي الأسئلة الهامة التي نسي الطلاب طرحها وما يجب فعله في الـ Examination.")
             st.markdown("### 📝 تقرير تقييم اللجنة الطبية:")
             st.info(response.text)
