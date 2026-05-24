@@ -8,21 +8,20 @@ import random
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Multi-Board Simulator", page_icon="🩺", layout="centered")
 st.title("🩺 منصة محاكاة امتحانات OB/GYN المتطورة")
-st.write("مرحباً بك يا دكتور أمين وزملائك. تم تحديث الكود ليتوافق مع السيرفرات ويمنع الضغط.")
+st.write("مرحباً بك يا دكتور أمين وزملائك. تم تحديث الكود وتفعيل مفاتيح الاتصال الجديدة الخاصة بك بنجاح.")
 
-# 2. مجمّع المفاتيح (ضع مفاتيحك الجديدة هنا)
-# تأكد أن المفاتيح تبدأ بـ AIzaSy وتعمل بشكل صحيح
+# 2. مجمّع المفاتيح الجديدة الخاصة بك والمحمية بنظام التناوب التلقائي
 API_KEYS_POOL = [
-    "AIzaSyCGXIIx3HIMC7GeFZFrcSmXpxZGgUG8K5Q",
-    "AIzaSyBXxYZNFlVmpKf1f_oSgWqYVfgC7_spNCU",
-    "AIzaSyAA5E6EziXwrm8U3fFFCPkH-s9If3tP674",
-    "AIzaSyAn8q3hwFn0K0i_OTOVHdhdTxR5j0MHUyw",
-    "AIzaSyC0uiwlDJW_STJL6i9Edl1gDdOiEE63MFc",
-    "AIzaSyBHtq_8zblQ52ca93jpGDrhDWwaEll0BuM",
-    "AIzaSyAyr2tZVOcYgoCOfF1kXCnPCD41PGSEjxI"
+    "AIzaSyDb5Thpjzk2YjtmNUiecR4NzxQzsJaelb4",
+    "AIzaSyATL8FABjR8ECyUyx-rUVAuEHTsBCfrBEg",
+    "AIzaSyAxtThGXNx3RfHv9bWHO_nxrRuILqeg-_4",
+    "AIzaSyCk8izLy73ACSWAqxq1XAPMBe0QKzENPWo",
+    "AIzaSyB7tmDNDxgpIefg_-hud2vpAP5sOrByQxs",
+    "AIzaSyCDcFCqFkVV-qA9wk8rXAEWW10VrDNvMig",
+    "AIzaSyCTMSL1mCU2J3W0vEueR0n1mM3qd5-DpQE"
 ]
 
-# بنك المواضيع (مختصر لتقليل حجم البيانات المرسلة للسيرفر ومنع الحظر)
+# بنك المواضيع المعتمدة لتغذية اللجان والأسئلة الشفوية والنظرية
 CURRICULUM_TOPICS = [
     "Antenatal care (Dr. Zahra)", "Ultrasound (Dr. Zahra Al-Sedd)", "Perinatal Screening (Dr. Karima)",
     "Teratogenic Drugs (Dr. Rania)", "Abortion (Dr. Rania)", "Ectopic Pregnancy (Dr. Sumaya Al-Jarbi)",
@@ -41,11 +40,11 @@ CURRICULUM_TOPICS = [
 ARABIC_NAMES = ["فاطمة", "مريم", "سالمة", "خديجة", "عائشة", "نجاة", "هناء", "أمل", "منى"]
 LIBYAN_CITIES = ["طرابلس", "بنغازي", "مصراتة", "الزاوية", "سبها", "الخمس"]
 
-# دالة إرسال الطلبات المعدلة والمحمية ضد الحظر والتهنيج
+# دالة إرسال الطلبات المحمية والمحسّنة لقراءة المفاتيح الجديدة وتدويرها تلقائياً
 def ask_gemini_direct(prompt_context, messages_list, current_input):
-    valid_keys = [k for k in API_KEYS_POOL if k and not k.startswith("ضع_هنا")]
+    valid_keys = [k for k in API_KEYS_POOL if k and k.strip() != ""]
     if not valid_keys: 
-        return "خطأ: لم تقم بإدخال مفاتيحك الخاصة الفعالة في قائمة API_KEYS_POOL داخل الكود!"
+        return "خطأ: لم يتم العثور على أي مفاتيح تشغيل صالحة في القائمة!"
         
     start_index = random.randint(0, len(valid_keys) - 1)
     
@@ -53,31 +52,28 @@ def ask_gemini_direct(prompt_context, messages_list, current_input):
         idx = (start_index + i) % len(valid_keys)
         selected_key = valid_keys[idx]
         
-        # استخدام موديل flash المستقر والخفيف لتفادي الحظر المجاني
+        # الاتصال المباشر بموديل الـ Flash المتطور والخفيف لمنع الحظر المجاني
         url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={selected_key}"
         
-        # بناء سياق المحادثة بشكل خفيف ومباشر
         contents = [{"role": "user", "parts": [{"text": prompt_context}]}]
-        for msg in messages_list[-5:]: # إرسال آخر 5 رسائل فقط لمنع تخطي حدود حجم الـ Context في الحساب المجاني
+        for msg in messages_list[-5:]: # إرسال آخر 5 رسائل فقط للحفاظ على حجم الكوتا وحماية المفاتيح الجديدة
             role_type = "model" if msg["role"] in ["patient", "assistant"] else "user"
             contents.append({"role": role_type, "parts": [{"text": msg["text"]}]})
         
         contents.append({"role": "user", "parts": [{"text": current_input}]})
         
         try:
-            res = requests.post(url, headers={"Content-Type": "application/json"}, json={"contents": contents}, timeout=10)
+            res = requests.post(url, headers={"Content-Type": "application/json"}, json={"contents": contents}, timeout=12)
             if res.status_code == 200: 
                 return res.json()['candidates'][0]['content']['parts'][0]['text']
-            elif res.status_code == 400:
-                return f"API Error (400): خطأ في صياغة الطلب أو أن المفتاح غير مفعل لنموذج جينيريت."
-            elif res.status_code == 403:
-                return f"API Error (403): المفتاح المستعمل غير صحيح أو محظور من جوجل."
             elif res.status_code == 429:
-                continue # إذا كان مشغexpressions تخطاه للمفتاح التالي
+                continue # إذا كان المفتاح عليه ضغط لحظي ينتقل فوراً للمفتاح الذي بعده
+            elif res.status_code == 400:
+                return f"⚠️ خطأ بالسيرفر (400): قد يكون هناك مفتاح غير نشط أو يحتاج لتفعيل خاصية الـ AI Generation من منصة الحساب."
         except Exception as e:
             continue
             
-    return "⚠️ تنبيه من السيرفر: جميع المفاتيح المسجلة تعطي خطأ في الاتصال حالياً. تأكد من نسخ المفاتيح الجديدة بشكل كامل وبدون فراغات."
+    return "⚠️ تنبيه: جميع المفاتيح الجديدة تعطي خطأ في الاستجابة حالياً، يرجى الانتظار ثوانٍ وإعادة المحاولة."
 
 # الهيكل الأساسي واختيار اللجان
 st.markdown("---")
@@ -107,7 +103,7 @@ if board_selection == "اللجنة الأولى: History Taking Case (عربي)
             st.session_state.active_prompt = "You are a Libyan pregnant patient. Answer very shortly in Libyan dialect (1 line). Act as a patient with severe headache and blurred vision (Pre-eclampsia) or painless bleeding. Do not say diagnosis."
         else:
             st.session_state.active_prompt = "You are a Libyan postpartum patient. Answer shortly in Libyan dialect (1 line). You complain of high fever and heavy vaginal bleeding (Postpartum Endometritis). Do not say diagnosis."
-        st.success("تم دخول المريضة بنجاح. ابدأ بسؤالها الآن.")
+        st.success("تم دخول المريضة بنجاح بنظام المفاتيح الجديد. ابدأ بسؤالها الآن.")
 
     for m in st.session_state.history_msgs:
         avatar = "🤰" if m["role"] == "patient" else "👨‍⚕️"
@@ -115,7 +111,7 @@ if board_selection == "اللجنة الأولى: History Taking Case (عربي)
             
     user_text = st.chat_input("اسأل المريضة هنا (مثال: السلام عليكم، شن اسمك يا خالة؟)...")
     if user_text:
-        with St.spinner("المريضة تجيب..."):
+        with st.spinner("المريضة تجيب..."):
             ans = ask_gemini_direct(st.session_state.active_prompt, st.session_state.history_msgs, user_text)
             st.session_state.history_msgs.append({"role": "doctor", "text": user_text})
             st.session_state.history_msgs.append({"role": "patient", "text": ans})
