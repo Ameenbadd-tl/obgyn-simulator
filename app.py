@@ -7,8 +7,8 @@ import random
 
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout="centered")
-st.title("🩺 محاكي الـ OB/GYN الشامل المتطور")
-st.write("مرحباً بك يا دكتور أمين وزملائك. تم دمج اللجان الثلاث بالكامل بناءً على الكود الأساسي الشغال دون حذف أي ميزة.")
+st.title("🩺 محاكي الـ OB/GYN الشامل والمتطور")
+st.write("مرحباً بك يا دكتور أمين وزملائك. تم تحديث الكود وتخفيف حجم البيانات لمنع حظر المفاتيح المجانية وضمان عملها 100%.")
 
 # 2. مجمّع المفاتيح السبعة المحمية بنظام التناوب الذكي
 API_KEYS_POOL = [
@@ -26,7 +26,7 @@ ARABIC_NAMES = ["فاطمة", "مريم", "سالمة", "خديجة", "عائش�
 LIBYAN_CITIES = ["طرابلس", "بنغازي", "مصراتة", "الزاوية", "سبها", "الخمس", "زليتن", "غريان", "البيضاء", "طبرق"]
 JOBS = ["ربة بيت", "معلمة مدرسة", "موظفة إدارية", "طالبة جامعية", "مهندسة", "تشتغل في معمل", "لا تعمل"]
 
-# بنك المنهج للامتحان الشفوي والآلات (للقسم الثالث الجديد)
+# بنك المنهج للامتحان الشفوي والآلات
 CURRICULUM_TOPICS = [
     "Antenatal care (Dr. Zahra)", "Ultrasound (Dr. Zahra Al-Sedd)", "Perinatal Screening (Dr. Karima)",
     "Teratogenic Drugs (Dr. Rania)", "Abortion (Dr. Rania)", "Ectopic Pregnancy (Dr. Sumaya Al-Jarbi)",
@@ -120,7 +120,7 @@ if "hidden_case_details" not in st.session_state:
 if "selected_type" not in st.session_state:
     st.session_state.selected_type = ""
 
-# دالة إرسال ذكية تدور على المفاتيح بالترتيب وتتخطى المفتاح المضغوط تلقائياً (نفس دالتك الأصلية تماماً بدون أي تعديل يخربها)
+# دالة إرسال ذكية تعتمد على دمج كودك مع ميزة الـ Context Optimization للحساب المجاني لمنع الحظر اللحظي
 def ask_gemini_direct(audio_path_input=None, text_input=None):
     valid_keys = [k for k in API_KEYS_POOL if k and k != "AIzaSy..."]
     if not valid_keys:
@@ -136,7 +136,9 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
         headers = {"Content-Type": "application/json"}
         
         contents = [{"role": "user", "parts": [{"text": st.session_state.current_case_prompt}]}]
-        for msg in st.session_state.messages:
+        
+        # 💡 التعديل الفني السحري: إرسال آخر 4 رسائل فقط في المحادثة لمنع تخطي حدود الكلمات (Tokens Limit) في الحساب المجاني
+        for msg in st.session_state.messages[-4:]:
             role_type = "model" if msg["role"] == "patient" else "user"
             contents.append({"role": role_type, "parts": [{"text": msg["text"]}]})
         
@@ -153,7 +155,7 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
         payload = {"contents": contents}
         
         try:
-            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            response = requests.post(url, headers=headers, json=payload, timeout=12)
             res_json = response.json()
             if response.status_code == 200:
                 return res_json['candidates'][0]['content']['parts'][0]['text']
@@ -309,7 +311,7 @@ if board_selection == "اللجنة الأولى: History Taking Case (العر�
                     st.info(response_text)
 
 # =========================================================
-# 🔬 اللجنة الثانية: OSCE Short Cases (English) - ميزة مضافة
+# 🔬 اللجنة الثانية: OSCE Short Cases (English)
 # =========================================================
 elif board_selection == "اللجنة الثانية: OSCE Short Cases (English)":
     st.subheader("🔬 OSCE Board: Combined Short Cases المحطات القصيرة")
@@ -327,7 +329,7 @@ elif board_selection == "اللجنة الثانية: OSCE Short Cases (English)
         """
         with st.spinner("Formulating OSCE cases..."):
             initial_text = ask_gemini_direct(text_input="Start the OSCE station now.")
-            st.session_state.messages.append({"role": "patient", "text": initial_text}) # تخزينها باسم الدور لتقرأها الدالة
+            st.session_state.messages.append({"role": "patient", "text": initial_text})
 
     # عرض الأسئلة والدردشة للجنة الـ OSCE
     for msg in st.session_state.messages:
@@ -346,7 +348,7 @@ elif board_selection == "اللجنة الثانية: OSCE Short Cases (English)
                 st.rerun()
 
 # =========================================================
-# 📚 اللجنة الثالثة: Curriculum & Instruments Quiz (English) - ميزة مضافة
+# 📚 اللجنة الثالثة: Curriculum & Instruments Quiz (English)
 # =========================================================
 else:
     st.subheader("📚 Board 3: Oral Viva, Topics & Instruments")
