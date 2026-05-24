@@ -43,10 +43,10 @@ def ask_gemini_audio(audio_path_input=None, text_input=None):
             role_type = "model" if msg["role"] == "patient" else "user"
             full_contents.append({"role": role_type, "parts": [msg["text"]]})
         
-        # إضافة المدخل الحالي
+        # إضافة المدخل الحالي مع تصحيح القوس النهائي هنا
         if audio_path_input:
             uploaded_audio = genai.upload_file(audio_path_input)
-            full_contents.append({"role": "user", "parts": [uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد قصير جداً ومباشر"]])
+            full_contents.append({"role": "user", "parts": [uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد قصير جداً ومباشر"]})
             response = model.generate_content(full_contents)
             genai.delete_file(uploaded_audio.name)
         else:
@@ -75,13 +75,12 @@ if st.button("🎬 دخول مريضة جديدة العيادة"):
         
         st.session_state.messages.append({"role": "patient", "text": initial_reply, "audio_path": tts_path})
 
-# 5. عرض المحادثة الحالية بشكل منظم لتفادي الأخطاء البرمجية
+# 5. عرض المحادثة الحالية بشكل منظم
 for index, msg in enumerate(st.session_state.messages):
     if msg["role"] == "patient":
         with st.chat_message("user", avatar="🤰"):
             st.write(msg["text"])
             if "audio_path" in msg and os.path.exists(msg["audio_path"]):
-                # إضافة key فريد لكل عنصر صوتي لحل مشكلة السيرفر تماماً
                 st.audio(msg["audio_path"], autoplay=(index == len(st.session_state.messages)-1), key=f"audio_key_{index}")
     else:
         with st.chat_message("assistant", avatar="👨‍⚕️"):
