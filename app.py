@@ -8,7 +8,7 @@ st.set_page_config(page_title="OB/GYN Long Case Simulator", page_icon="🩺", la
 st.title("🩺 محاكي امتحان الـ Long Case (نساء وولادة)")
 st.write("مرحباً بك يا دكتور أمين وزملائك. سجلوا أسئلتكم كفويس نوت على الموبايل وارفعوها هنا للتحدث مع المريضة.")
 
-# 2. إعداد مفتاح الـ API الخاص بك بشكل آمن ومباشر
+# 2. إعداد مفتاح الـ API الخاص بك
 GEMINI_API_KEY = "AIzaSyCEfS8-uK42rx0AgZP8711a6M9TCXRPiZw"
 
 # 3. التعليمات البرمجية لتوجيه الذكاء الاصطناعي (System Prompt)
@@ -29,14 +29,13 @@ if "messages" not in st.session_state:
 if "case_started" not in st.session_state:
     st.session_state.case_started = False
 
-# دالة لتوليد الردود دون استخدام start_chat المسببة للمشاكل في السيرفر
+# دالة لتوليد الردود تم تعديل مسار الموديل فيها لحل مشكلة الـ 404 نهائياً
 def ask_gemini(prompt_input):
     try:
-        # تهيئة العميل مباشرة عند كل طلب لضمان عدم حدوث NotFound
         genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+        # تم استخدام الموديل مباشرة بدون بادئة وتغييره إلى النسخة الأكثر استقراراً للـ API
+        model = genai.GenerativeModel("gemini-1.5-pro")
         
-        # بناء سياق المحادثة كاملاً يدوياً
         full_contents = [{"role": "user", "parts": [SYSTEM_PROMPT]}]
         for msg in st.session_state.messages:
             role_type = "model" if msg["role"] == "patient" else "user"
@@ -96,8 +95,7 @@ if st.session_state.case_started:
                 genai.configure(api_key=GEMINI_API_KEY)
                 uploaded_audio = genai.upload_file("temp_user_voice.wav")
                 
-                # إرسال الملف الصوتي مع صياغة يدوية للطلب
-                model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+                model = genai.GenerativeModel("gemini-1.5-pro")
                 response = model.generate_content([uploaded_audio, f"{SYSTEM_PROMPT}\n\nردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد"])
                 
                 tts_path = f"reply_{len(st.session_state.messages)}.mp3"
