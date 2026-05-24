@@ -1,3 +1,8 @@
 streamlit
 requests
 gTTS
+transformers
+torch
+sentencepiece
+openai-whisper
+coqui-tts
