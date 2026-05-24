@@ -12,13 +12,13 @@ st.write("مرحباً بك يا دكتور أمين وزملائك. تم حل �
 
 # 2. مجمّع المفاتيح السبعة المحمية بنظام التناوب الذكي
 API_KEYS_POOL = [
-    "AIzaSyCgXikXLejIGsfTwfBbLd1n7cxVxFxYQeU",
-    "AIzaSyCKSxhg02oMi-JFvtK8iLVa8hlM64-bQxM",
-    "AIzaSyAFG4qNJF_mSL5Vx4PTThMdiAYPRtle1Sk",
-    "AIzaSyAcZ-KgzwlNeqQ27t-Evzy6QsCqSP-F2q0,
-    "AIzaSyD-UtKn0V0PTsMX0TSxiH_bn6sHgdoULDw",
     "AIzaSyBwAjQjdpndUPF2eyGLef1mIQesM8AUvi0",
-    "AIzaSyBwAjQjdpndUPF2eyGLef1mIQesM8AUvi0"
+    "AIzaSyD-UtKn0V0PTsMX0TSxiH_bn6sHgdoULDw",
+    "AIzaSyAcZ-KgzwlNeqQ27t-Evzy6QsCqSP-F2q0",
+    "AIzaSyAFG4qNJF_mSL5Vx4PTThMdiAYPRtle1Sk",
+    "AIzaSyAFG4qNJF_mSL5Vx4PTThMdiAYPRtle1Sk",
+    "AIzaSyCKSxhg02oMi-JFvtK8iLVa8hlM64-bQxM",
+    "AIzaSyCgXikXLejIGsfTwfBbLd1n7cxVxFxYQeU"
 ]
 
 # 3. بنك البيانات لتوليد شخصيات وهويات ليبية عشوائية ومختلفة في كل مرة
@@ -132,16 +132,16 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
         idx = (start_index + i) % len(valid_keys)
         selected_key = valid_keys[idx]
         
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={selected_key}"
+        # 💡 الإصلاح: استخدام موديل 1.5 الثابت لتفادي خطأ 404 وتوقف الكود
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={selected_key}"
         headers = {"Content-Type": "application/json"}
         
-        # إذا كان هناك ملف صوتي، نقوم أولاً بتحويله إلى نص لحماية كوتا الـ Tokens والـ IP من الحظر
+        # معالجة الصوت بمهلة زمنية أطول (25 ثانية) لعدم انهيار الاتصال
         if audio_path_input:
             try:
                 with open(audio_path_input, "rb") as audio_file:
                     audio_data = base64.b64encode(audio_file.read()).decode("utf-8")
                 
-                # طلب خفيف جداً ومستقل مخصص فقط لتفريغ الصوت بدقة وبدون تحميل ذاكرة الحوار
                 audio_payload = {
                     "contents": [{
                         "role": "user",
@@ -151,32 +151,38 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
                         ]
                     }]
                 }
-                audio_res = requests.post(url, headers=headers, json=audio_payload, timeout=10)
+                audio_res = requests.post(url, headers=headers, json=audio_payload, timeout=25)
                 if audio_res.status_code == 200:
                     text_input = audio_res.json()['candidates'][0]['content']['parts'][0]['text']
                 else:
-                    continue # تجربة المفتاح التالي إذا فشل تفريغ الصوت
-            except:
+                    continue 
+            except Exception as e:
                 continue
 
-        # الآن نقوم بإرسال الحوار الفعلي كنص صافي وخفيف جداً، مما يمنع حدوث RESOURCE_EXHAUSTED بشكل قطعي
-        contents = [{"role": "user", "parts": [{"text": st.session_state.current_case_prompt}]}]
-        
-        # تحسين الذاكرة: إرسال آخر 4 رسائل فقط لتقليص الـ Tokens وحماية الخادم المجاني
+        # 💡 الإصلاح الجوهري للأدوار (Role Sequence) باستخدام ميزة System Instruction لتفادي 400 Bad Request
+        contents = []
         for msg in st.session_state.messages[-4:]:
-            role_type = "model" if msg["role"] == "patient" else "user"
+            role_type = "model" if msg["role"] in ["patient", "assistant"] else "user"
             contents.append({"role": role_type, "parts": [{"text": msg["text"]}]})
         
         # إضافة السؤال الحالي
-        contents.append({"role": "user", "parts": [{"text": text_input if text_input else "كيف حالك يا خالة؟"}]})
+        current_text = text_input if text_input else "كيف حالك؟"
+        if st.session_state.case_started and st.session_state.selected_type in ["Antenatal", "Postnatal"]:
+            current_text += "\n(ردي على هذا السؤال بصفتك المريضة بالعامية الليبية وبشكل قصير جداً وفي سطر واحد ومباشر وطبيعي)"
+            
+        contents.append({"role": "user", "parts": [{"text": current_text}]})
         
-        # إضافة التوجيه النهائي لضمان اللهجة الليبية والاختصار
-        contents[-1]["parts"].append({"text": "\n(ردي على هذا السؤال بصفتك المريضة بالعامية الليبية وبشكل قصير جداً وفي سطر واحد ومباشر وطبيعي)"})
-        
-        payload = {"contents": contents}
+        # دمج الـ Prompt السري في المكان المخصص له برمجياً (System Instruction)
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": st.session_state.current_case_prompt}]
+            },
+            "contents": contents
+        }
         
         try:
-            response = requests.post(url, headers=headers, json=payload, timeout=12)
+            # مهلة 25 ثانية لضمان استلام الرد حتى مع بطء الإنترنت
+            response = requests.post(url, headers=headers, json=payload, timeout=25)
             res_json = response.json()
             if response.status_code == 200:
                 return res_json['candidates'][0]['content']['parts'][0]['text']
@@ -184,11 +190,11 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
                 continue
             else:
                 error_msg = res_json.get('error', {}).get('message', 'Unknown API Error')
-                return f"Error: {error_msg}"
+                return f"Error {response.status_code}: {error_msg}"
         except Exception as e:
             continue
             
-    return "💡 السيرفر المجاني مضغوط حالياً، يرجى تكرار إرسال الضغطة مرة أخرى وسيعمل فوراً عبر المفتاح البديل للشبكة."
+    return "RESOURCE_EXHAUSTED: جميع المفاتيح مشغولة حالياً بالكامل بسبب ضغط الطلاب، يرجى إعادة المحاولة بعد ثوانٍ بسيطة."
 
 # =========================================================
 # 🧭 شريط التحكم الجانبي واختيار اللجان الذكي (Sidebar Navigation)
@@ -283,7 +289,7 @@ if board_selection == "اللجنة الأولى: History Taking Case (العر�
                 
             with st.spinner("المريضة تستمع وتجيب..."):
                 response_text = ask_gemini_direct(audio_path_input="user_voice.wav")
-                if "Error" in response_text:
+                if "Error" in response_text or "RESOURCE_EXHAUSTED" in response_text:
                     st.error(response_text)
                 else:
                     tts_path = f"reply_{len(st.session_state.messages)}.mp3"
@@ -296,7 +302,7 @@ if board_selection == "اللجنة الأولى: History Taking Case (العر�
         if user_text_input:
             with st.spinner("المريضة تجيب..."):
                 response_text = ask_gemini_direct(text_input=user_text_input)
-                if "Error" in response_text:
+                if "Error" in response_text or "RESOURCE_EXHAUSTED" in response_text:
                     st.error(response_text)
                 else:
                     tts_path = f"reply_{len(st.session_state.messages)}.mp3"
@@ -324,7 +330,7 @@ if board_selection == "اللجنة الأولى: History Taking Case (العر�
                 4. 🏆 نصيحة البروفيسور النهائية للطالب لتطوير أدائه في الامتحان العملي.
                 """
                 response_text = ask_gemini_direct(text_input=eval_prompt)
-                if "Error" in response_text:
+                if "Error" in response_text or "RESOURCE_EXHAUSTED" in response_text:
                     st.error(response_text)
                 else:
                     st.markdown("### 📝 تقرير تقييم اللجنة الطبية للـ Long Case:")
@@ -349,7 +355,10 @@ elif board_selection == "اللجنة الثانية: OSCE Short Cases (English)
         """
         with st.spinner("Formulating OSCE cases..."):
             initial_text = ask_gemini_direct(text_input="Start the OSCE station now.")
-            st.session_state.messages.append({"role": "patient", "text": initial_text})
+            if "Error" in initial_text or "RESOURCE_EXHAUSTED" in initial_text:
+                st.error(initial_text)
+            else:
+                st.session_state.messages.append({"role": "patient", "text": initial_text})
 
     # عرض الأسئلة والدردشة للجنة الـ OSCE
     for msg in st.session_state.messages:
@@ -364,8 +373,11 @@ elif board_selection == "اللجنة الثانية: OSCE Short Cases (English)
             with st.spinner("Evaluating your OSCE answers..."):
                 st.session_state.messages.append({"role": "doctor", "text": osce_input})
                 feedback = ask_gemini_direct(text_input="Grade my previous answer strictly as an OSCE Examiner, give marks and the model answer.")
-                st.session_state.messages.append({"role": "patient", "text": feedback})
-                st.rerun()
+                if "Error" in feedback or "RESOURCE_EXHAUSTED" in feedback:
+                    st.error(feedback)
+                else:
+                    st.session_state.messages.append({"role": "patient", "text": feedback})
+                    st.rerun()
 
 # =========================================================
 # 📚 اللجنة الثالثة: Curriculum & Instruments Quiz (English)
@@ -397,7 +409,10 @@ else:
             
         with st.spinner("Extracting board question..."):
             quiz_text = ask_gemini_direct(text_input="Give me the exam question now.")
-            st.session_state.messages.append({"role": "patient", "text": quiz_text})
+            if "Error" in quiz_text or "RESOURCE_EXHAUSTED" in quiz_text:
+                st.error(quiz_text)
+            else:
+                st.session_state.messages.append({"role": "patient", "text": quiz_text})
 
     # عرض الأسئلة والدردشة للجنة الـ الشفوي والآلات
     for msg in st.session_state.messages:
@@ -412,5 +427,8 @@ else:
             with st.spinner("Analyzing answers..."):
                 st.session_state.messages.append({"role": "doctor", "text": quiz_input})
                 evaluation = ask_gemini_direct(text_input="Evaluate my answer scientifically, provide the score and ideal correction.")
-                st.session_state.messages.append({"role": "patient", "text": evaluation})
-                st.rerun()
+                if "Error" in evaluation or "RESOURCE_EXHAUSTED" in evaluation:
+                    st.error(evaluation)
+                else:
+                    st.session_state.messages.append({"role": "patient", "text": evaluation})
+                    st.rerun()
