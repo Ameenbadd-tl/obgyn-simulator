@@ -9,8 +9,12 @@ st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout
 st.title("🩺 محاكي الـ Long Case الصوتي التلقائي")
 st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك.")
 
-# 2. حقن مفتاح الـ API الخاص بك
-GEMINI_API_KEY = "AIzaSyCEfS8-uK42rx0AgZP8711a6M9TCXRPiZw"
+# 2. جلب مفتاح الـ API بشكل آمن من الـ Secrets الخاصة بـ Streamlit
+if "GEMINI_API_KEY" in st.secrets:
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+else:
+    st.error("الرجاء إضافة مفتاح الـ GEMINI_API_KEY في إعدادات Secrets الخاصة بـ Streamlit أولاً!")
+    st.stop()
 
 # 3. قائمة السيناريوهات المتنوعة لضمان عشوائية الحالات في كل مرة
 SCENARIOS = [
@@ -55,13 +59,13 @@ def ask_gemini_audio(audio_path_input=None, text_input=None):
         genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel("gemini-2.5-flash")
         
-        # بناء الذاكرة والسياق يدوياً لضمان الاستقرار
+        # بناء الذاكرة والسياق يدوياً
         full_contents = [{"role": "user", "parts": [st.session_state.current_case_prompt]}]
         for msg in st.session_state.messages:
             role_type = "model" if msg["role"] == "patient" else "user"
             full_contents.append({"role": role_type, "parts": [msg["text"]]})
         
-        # إضافة المدخل الحالي (صوت أو نص) مع التأكد التام من صحة الأقواس
+        # إضافة المدخل الحالي
         if audio_path_input:
             uploaded_audio = genai.upload_file(audio_path_input)
             full_contents.append({"role": "user", "parts": [uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد قصير جداً ومباشر"]})
@@ -75,19 +79,19 @@ def ask_gemini_audio(audio_path_input=None, text_input=None):
     except Exception as e:
         return f"Error: {str(e)}"
 
-# تغيير اسم الزر وجعله يختار سيناريو عشوائي ويصمت في البداية لتتحدث أنت أولاً
+# زر بدء حالة جديدة
 if st.button("🎬 بدء أخذ History لحالة جديدة"):
     st.session_state.messages = []
     st.session_state.case_started = True
     st.session_state.last_processed_audio = None
     
-    # اختيار حالة عشوائية خفية وتحديث الـ Prompt بها
+    # اختيار حالة عشوائية خفية
     selected_case = random.choice(SCENARIOS)
     st.session_state.current_case_prompt = f"{BASE_SYSTEM_PROMPT}\nYour specific hidden condition for this session is: {selected_case}. Do NOT reveal it until requested."
     
     st.success("دخلت المريضة العيادة وجلست على الكرسي وهي صامتة الآن وتنتظر سؤالك. اضغط على المايك بالأسفل وابدأ بسؤالها!")
 
-# 6. عرض المحادثة الحالية بشكل منظم لتفادي خطأ الـ TypeError
+# 6. عرض المحادثة الحالية بشكل منظم
 for index, msg in enumerate(st.session_state.messages):
     if msg["role"] == "patient":
         with st.chat_message("user", avatar="🤰"):
@@ -103,13 +107,10 @@ if st.session_state.case_started:
     st.write("---")
     st.subheader("🎙️ ابدأ بالتحدث مع المريضة:")
     
-    # مسجل الصوت الافتراضي للمتصفح
     audio_value = st.audio_input("اضغط على زر المايك واسأل المريضة (مثال: السلام عليكم، تفضلي يا مدام من شو تشتكي؟)")
-    
-    # خيار كتابي سريع للاحتياط
     user_text_input = st.chat_input("أو اكتب سؤالك هنا إذا كنت لا تفضل الصوت...")
 
-    # أ) معالجة الصوت التلقائي عند مبادرة الطبيب بالحديث (تم إصلاح السطر 112 هنا أيضاً)
+    # أ) معالجة الصوت التلقائي
     if audio_value and audio_value != st.session_state.last_processed_audio:
         st.session_state.last_processed_audio = audio_value
         
