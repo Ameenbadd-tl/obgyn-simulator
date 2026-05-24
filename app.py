@@ -32,8 +32,11 @@ if "chat_session" not in st.session_state:
 
 # زر بدء حالة جديدة
 if st.button("🎬 ابدأ حالة سريرية جديدة (مريضة جديدة)"):
-    # تم التعديل هنا بإضافة -latest لحل مشكلة الـ NotFound بشكل جذري
-    model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest", system_instruction=SYSTEM_PROMPT)
+    # استخدام التسمية الثابتة والمضمونة للموديل لتفادي تعارض الإصدارات
+    model = genai.GenerativeModel(
+        model_name="models/gemini-1.5-flash", 
+        system_instruction=SYSTEM_PROMPT
+    )
     st.session_state.chat_session = model.start_chat(history=[])
     st.session_state.messages = []
     
@@ -76,11 +79,9 @@ if st.session_state.chat_session:
         
         with st.spinner("المريضة تستمع وتجيب بصوتها..."):
             try:
-                # رفع الملف الصوتي لجمناي ليقوم بتحليله وفهمه مباشرة
                 uploaded_audio = genai.upload_file("temp_user_voice.wav")
                 response = st.session_state.chat_session.send_message([uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد"])
                 
-                # تحويل رد المريضة النصي إلى ملف صوتي
                 tts_path = f"reply_{len(st.session_state.messages)}.mp3"
                 tts = gTTS(text=response.text, lang='ar', slow=False)
                 tts.save(tts_path)
