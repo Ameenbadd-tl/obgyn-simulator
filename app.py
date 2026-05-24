@@ -7,10 +7,21 @@ import random
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout="centered")
 st.title("🩺 محاكي الـ Long Case الصوتي التلقائي")
-st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك.")
 
-# 2. حقن مفتاح الـ API الجديد مباشرة لتجنب كاش السيرفر القديم
-GEMINI_API_KEY = "AIzaSyCmqF22vQBDXQ_Tx8an9WxpSTN6Z9bnA9s"
+# 2. حماية مفتاح الـ API عبر الجانب الجانبي (Sidebar) لمنع حظره من جيت هاب
+st.sidebar.header("🔑 إعدادات الاتصال الآمن")
+api_input = st.sidebar.text_input("أدخل مفتاح Gemini API الجديد هنا:", type="password")
+st.sidebar.markdown("[اضغط هنا لإنشاء مفتاح جديد إذا تم حظر مفتاحك](https://aistudio.google.com/)")
+
+# محاولة جلب المفتاح من الـ Secrets كخيار احتياطي
+if api_input:
+    GEMINI_API_KEY = api_input
+elif "GEMINI_API_KEY" in st.secrets:
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+else:
+    GEMINI_API_KEY = None
+
+st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك.")
 
 # 3. قائمة السيناريوهات المتنوعة لضمان عشوائية الحالات في كل مرة
 SCENARIOS = [
@@ -51,6 +62,8 @@ if "current_case_prompt" not in st.session_state:
     st.session_state.current_case_prompt = BASE_SYSTEM_PROMPT
 
 def ask_gemini_audio(audio_path_input=None, text_input=None):
+    if not GEMINI_API_KEY:
+        return "Error: يرجى إدخال مفتاح الـ API في القائمة الجانبية أولاً لتفعيل المحاكي!"
     try:
         genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -87,15 +100,14 @@ if st.button("🎬 بدء أخذ History لحالة جديدة"):
     
     st.success("دخلت المريضة العيادة وجلست على الكرسي وهي صامتة الآن وتنتظر سؤالك. اضغط على المايك بالأسفل وابدأ بسؤالها!")
 
-# 6. عرض المحادثة الحالية بشكل منظم (تمت صيانته لمنع الـ TypeError واختفاء الصوت)
+# 6. عرض المحادثة الحالية (تم الفصل التام والكامل لمنع الـ TypeError نهائياً)
 for index, msg in enumerate(st.session_state.messages):
     if msg["role"] == "patient":
         with st.chat_message("user", avatar="🤰"):
             st.write(msg["text"])
-            # التأكد أولاً من أن المفتاح موجود والملف الفعلي متوفر على السيرفر قبل التشغيل
             if "audio_path" in msg and msg["audio_path"] and os.path.exists(msg["audio_path"]):
                 st.audio(msg["audio_path"], key=f"audio_key_{index}")
-    else:
+    elif msg["role"] == "doctor":
         with st.chat_message("assistant", avatar="👨‍⚕️"):
             st.write(msg["text"])
 
@@ -122,8 +134,7 @@ if st.session_state.case_started:
                 tts = gTTS(text=response_text, lang='ar', slow=False)
                 tts.save(tts_path)
                 
-                # الطبيب ليس له ملف صوتي لحفظ مساحة السيرفر
-                st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب", "audio_path": None})
+                st.session_state.messages.append({"role": "doctor", "text": "🎤 سؤال صوّتي من الطبيب"})
                 st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
                 st.rerun()
             else:
@@ -134,13 +145,16 @@ if st.session_state.case_started:
         with st.spinner("المريضة تجيب..."):
             response_text = ask_gemini_audio(text_input=user_text_input)
             
-            tts_path = f"reply_{len(st.session_state.messages)}.mp3"
-            tts = gTTS(text=response_text, lang='ar', slow=False)
-            tts.save(tts_path)
-            
-            st.session_state.messages.append({"role": "doctor", "text": user_text_input, "audio_path": None})
-            st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
-            st.rerun()
+            if "Error" not in response_text:
+                tts_path = f"reply_{len(st.session_state.messages)}.mp3"
+                tts = gTTS(text=response_text, lang='ar', slow=False)
+                tts.save(tts_path)
+                
+                st.session_state.messages.append({"role": "doctor", "text": user_text_input})
+                st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
+                st.rerun()
+            else:
+                st.error(response_text)
 
 # 8. التقييم النهائي
 if st.session_state.case_started:
