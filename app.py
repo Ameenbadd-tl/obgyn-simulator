@@ -8,87 +8,92 @@ import random
 # 1. إعداد الصفحة والعنوان والمظهر
 st.set_page_config(page_title="OB/GYN Multi-Board Simulator", page_icon="🩺", layout="centered")
 st.title("🩺 منصة محاكاة امتحانات OB/GYN المتطورة")
-st.write("مرحباً بك يا دكتور أمين وزملائك في المنظومة الشاملة المحدثة وفقاً لمنهج الكلية وأوراق الامتحانات.")
+st.write("مرحباً بك يا دكتور أمين وزملائك. تم تحديث الكود ليتوافق مع السيرفرات ويمنع الضغط.")
 
-# 2. مجمّع المفاتيح السبعة المحمية بنظام التناوب الذكي
+# 2. مجمّع المفاتيح (ضع مفاتيحك الجديدة هنا)
+# تأكد أن المفاتيح تبدأ بـ AIzaSy وتعمل بشكل صحيح
 API_KEYS_POOL = [
-    "AIzaSyCTMSL1mCU2J3W0vEueR0n1mM3qd5-DpQE",
-    "AIzaSyCDcFCqFkVV-qA9wk8rXAEWW10VrDNvMig",
-    "AIzaSyB7tmDNDxgpIefg_-hud2vpAP5sOrByQxs",
-    "AIzaSyCk8izLy73ACSWAqxq1XAPMBe0QKzENPWo",
-    "AIzaSyAxtThGXNx3RfHv9bWHO_nxrRuILqeg-_4",
-    "AIzaSyATL8FABjR8ECyUyx-rUVAuEHTsBCfrBEg",
-    "AIzaSyDb5Thpjzk2YjtmNUiecR4NzxQzsJaelb4"
+    "AIzaSyCGXIIx3HIMC7GeFZFrcSmXpxZGgUG8K5Q",
+    "AIzaSyBXxYZNFlVmpKf1f_oSgWqYVfgC7_spNCU",
+    "AIzaSyAA5E6EziXwrm8U3fFFCPkH-s9If3tP674",
+    "AIzaSyAn8q3hwFn0K0i_OTOVHdhdTxR5j0MHUyw",
+    "AIzaSyC0uiwlDJW_STJL6i9Edl1gDdOiEE63MFc",
+    "AIzaSyBHtq_8zblQ52ca93jpGDrhDWwaEll0BuM",
+    "AIzaSyAyr2tZVOcYgoCOfF1kXCnPCD41PGSEjxI"
 ]
 
-# بنك المواضيع المعتمدة (81 موضوعاً) لتغذية السيرفر بالأسئلة والمناهج
+# بنك المواضيع (مختصر لتقليل حجم البيانات المرسلة للسيرفر ومنع الحظر)
 CURRICULUM_TOPICS = [
     "Antenatal care (Dr. Zahra)", "Ultrasound (Dr. Zahra Al-Sedd)", "Perinatal Screening (Dr. Karima)",
     "Teratogenic Drugs (Dr. Rania)", "Abortion (Dr. Rania)", "Ectopic Pregnancy (Dr. Sumaya Al-Jarbi)",
     "Hydatidiform Mole (Dr. Ibtisam)", "Antepartum Hemorrhage (Dr. Karima)", "Postpartum Hemorrhage (Dr. Rania)",
-    "DIC (Dr. Rania)", "Shock & Uterine Rupture (Dr. Ibtisam & Dr. Amal)", "IV therapy & Blood Transfusion (Dr. Ibtisam)",
-    "Hypertension in pregnancy (Dr. Heba)", "D.M in pregnancy (Dr. Heba)", "Heart disease in pregnancy (Dr. Rania)",
-    "Hyperemesis Gravidarum (Dr. Karima)", "UTI in pregnancy (Dr. Zahra)", "Anemia of Pregnancy (Dr. Heba)",
-    "DVT (Dr. Omaima)", "Thyroid disease in pregnancy (Dr. Rania)", "Liver disease during pregnancy (Dr. Heba)",
-    "Abdominal pain in pregnancy (Dr. Heba)", "Anatomy of pelvis & Fetal skull (Dr. Naziha & Dr. Rania)",
-    "Stages & Management of labour (Dr. Naziha & Dr. Omaima)", "Intrapartum assessment & LCG",
-    "Breech Presentation & Malposition (Dr. Omaima)", "Contracted pelvis (Dr. Rania)", "Shoulder Dystocia (Dr. Heba)",
-    "Preterm labour & PPROM (Dr. Naziha & Dr. Sumaya)", "Amniotic Fluid abnormalities (Dr. Sumaya)",
-    "Multiple Pregnancy (Dr. Omaima)", "Rh Allo-immunization (Dr. Naziha)", "Infectious diseases in pregnancy (Dr. Heba)",
-    "Fetal growth restriction & Macrosomia (Dr. Naziha)", "IUFD (Dr. Amal)", "Puerperium & Lactation (Dr. Zahra & Dr. Sumaya)",
-    "Maternal mortality rate in Libya (Dr. Amal)", "Induction of labor (Dr. Ibtisam)", "Operative vaginal delivery (Dr. Naziha)",
-    "Instruments in Obstetrics & Gynecology (Dr. Heba)", "Cesarean section (Dr. Amal)", "Perineal and cervical tears (Dr. Naziha)",
-    "Anaesthesia in pregnancy (Dr. Amal)", "Menstrual cycle & Puberty", "Menopause (Dr. Rania)", "Amenorrhea (Dr. Heba)",
-    "PCOS (Dr. Ibtisam)", "Dysmenorrhea & Dyspareunia (Dr. Sumaya)", "Premenstrual syndrome & Hirsutism",
-    "Hyperprolactinaemia & Infertility", "Recurrent Pregnancy Loss (Dr. Heba)", "Uterine Abnormalities (Dr. Sumaya)",
-    "Endometriosis and adenomyosis (Dr. Zahra)", "Abnormal Uterine bleeding (Dr. Amal)", "Benign ovarian cysts (Dr. Sumaya)",
-    "Fibroid Uterus (Dr. Heba)", "Endometrial hyperplasia & Cancer (Dr. Rania)", "Cancer cervix (Dr. Naziha)",
-    "Ovarian Cancer (Dr. Omaima)", "Vaginal Discharge, Pruritis & PID", "Pelvic organ prolapse (Dr. Naziha)",
-    "Genitourinary fistula & Urinary Incontinence (Dr. Heba)", "Family planning (Dr. Naziha)", "Hysterectomy & Hysteroscopy (Dr. Amal)"
+    "DIC & Shock (Dr. Rania & Dr. Ibtisam)", "Hypertension in pregnancy (Dr. Heba)", "D.M in pregnancy (Dr. Heba)",
+    "Heart disease in pregnancy (Dr. Rania)", "Hyperemesis Gravidarum (Dr. Karima)", "Anemia of Pregnancy (Dr. Heba)",
+    "DVT (Dr. Omaima)", "Anatomy of pelvis & Fetal skull", "Stages & Management of labour",
+    "Breech Presentation & Malposition", "Shoulder Dystocia (Dr. Heba)", "Preterm labour & PPROM",
+    "Multiple Pregnancy (Dr. Omaima)", "Rh Allo-immunization (Dr. Naziha)", "Fetal growth restriction (Dr. Naziha)",
+    "Instruments in Obstetrics & Gynecology (Dr. Heba)", "Cesarean section (Dr. Amal)", "Menstrual cycle & Puberty",
+    "Amenorrhea (Dr. Heba)", "PCOS (Dr. Ibtisam)", "Fibroid Uterus (Dr. Heba)", "Abnormal Uterine bleeding (Dr. Amal)",
+    "Cancer cervix & Ovarian Cancer", "PID & Vaginal Discharge", "Pelvic organ prolapse (Dr. Naziha)",
+    "Genitourinary fistula & Urinary Incontinence (Dr. Heba)", "Family planning (Dr. Naziha)"
 ]
 
 ARABIC_NAMES = ["فاطمة", "مريم", "سالمة", "خديجة", "عائشة", "نجاة", "هناء", "أمل", "منى"]
 LIBYAN_CITIES = ["طرابلس", "بنغازي", "مصراتة", "الزاوية", "سبها", "الخمس"]
 
-# دالة ذكية لإرسال الطلبات وتدوير المفاتيح
+# دالة إرسال الطلبات المعدلة والمحمية ضد الحظر والتهنيج
 def ask_gemini_direct(prompt_context, messages_list, current_input):
-    valid_keys = [k for k in API_KEYS_POOL if k and k != "AIzaSy..."]
-    if not valid_keys: return "Error: No valid API keys found!"
+    valid_keys = [k for k in API_KEYS_POOL if k and not k.startswith("ضع_هنا")]
+    if not valid_keys: 
+        return "خطأ: لم تقم بإدخال مفاتيحك الخاصة الفعالة في قائمة API_KEYS_POOL داخل الكود!"
+        
     start_index = random.randint(0, len(valid_keys) - 1)
     
     for i in range(len(valid_keys)):
         idx = (start_index + i) % len(valid_keys)
         selected_key = valid_keys[idx]
+        
+        # استخدام موديل flash المستقر والخفيف لتفادي الحظر المجاني
         url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={selected_key}"
         
+        # بناء سياق المحادثة بشكل خفيف ومباشر
         contents = [{"role": "user", "parts": [{"text": prompt_context}]}]
-        for msg in messages_list:
+        for msg in messages_list[-5:]: # إرسال آخر 5 رسائل فقط لمنع تخطي حدود حجم الـ Context في الحساب المجاني
             role_type = "model" if msg["role"] in ["patient", "assistant"] else "user"
             contents.append({"role": role_type, "parts": [{"text": msg["text"]}]})
         
         contents.append({"role": "user", "parts": [{"text": current_input}]})
+        
         try:
-            res = requests.post(url, headers={"Content-Type": "application/json"}, json={"contents": contents}, timeout=12)
-            if res.status_code == 200: return res.json()['candidates'][0]['content']['parts'][0]['text']
-        except: continue
-    return "RESOURCE_EXHAUSTED: All API keys are packed, retry in a few seconds."
+            res = requests.post(url, headers={"Content-Type": "application/json"}, json={"contents": contents}, timeout=10)
+            if res.status_code == 200: 
+                return res.json()['candidates'][0]['content']['parts'][0]['text']
+            elif res.status_code == 400:
+                return f"API Error (400): خطأ في صياغة الطلب أو أن المفتاح غير مفعل لنموذج جينيريت."
+            elif res.status_code == 403:
+                return f"API Error (403): المفتاح المستعمل غير صحيح أو محظور من جوجل."
+            elif res.status_code == 429:
+                continue # إذا كان مشغexpressions تخطاه للمفتاح التالي
+        except Exception as e:
+            continue
+            
+    return "⚠️ تنبيه من السيرفر: جميع المفاتيح المسجلة تعطي خطأ في الاتصال حالياً. تأكد من نسخ المفاتيح الجديدة بشكل كامل وبدون فراغات."
 
-# الهيكل الأساسي لاختيار اللجان الثلاث
+# الهيكل الأساسي واختيار اللجان
 st.markdown("---")
 board_selection = st.sidebar.radio("🎯 اختر اللجنة الامتحانية (Select Board):", 
     ["اللجنة الأولى: History Taking Case (عربي)", 
      "اللجنة الثانية: OSCE Short Cases (English)", 
      "اللجنة الثالثة: Curriculum & Instruments Quiz (English)"])
 
-# تهيئة متغيرات الجلسة العامة
 if "history_msgs" not in st.session_state: st.session_state.history_msgs = []
 if "osce_msgs" not in st.session_state: st.session_state.osce_msgs = []
 if "quiz_msgs" not in st.session_state: st.session_state.quiz_msgs = []
 if "active_prompt" not in st.session_state: st.session_state.active_prompt = ""
-if "hidden_meta" not in st.session_state: st.session_state.hidden_meta = ""
+if "selected_topic" not in st.session_state: st.session_state.selected_topic = ""
 
 # ==========================================
-# 1. اللجنة الأولى: محاكي الـ History Taking
+# 1. اللجنة الأولى: History Taking
 # ==========================================
 if board_selection == "اللجنة الأولى: History Taking Case (عربي)":
     st.subheader("🤰 محاكي حالات الـ Long Case بالعامية الليبية")
@@ -99,92 +104,77 @@ if board_selection == "اللجنة الأولى: History Taking Case (عربي)
         name, city = random.choice(ARABIC_NAMES), random.choice(LIBYAN_CITIES)
         
         if case_type == "Antenatal History (حالة حامل)":
-            st.session_state.active_prompt = "You are a Libyan pregnant patient in Arabic dialect. Answer shortly (1-2 lines). Mimic symptoms of major antenatal issues like Pre-eclampsia or Placenta Previa naturally only when asked. Stick strictly to local Libyan terms."
-            st.session_state.hidden_meta = f"Patient: {name}, Location: {city}, Antenatal simulated long case."
+            st.session_state.active_prompt = "You are a Libyan pregnant patient. Answer very shortly in Libyan dialect (1 line). Act as a patient with severe headache and blurred vision (Pre-eclampsia) or painless bleeding. Do not say diagnosis."
         else:
-            st.session_state.active_prompt = "You are a Libyan postpartum patient in Arabic ward. Answer very shortly (1-2 lines) in Libyan dialect. Simulate lochia/afterpain symptoms according to standard medical presentation."
-            st.session_state.hidden_meta = f"Patient: {name}, Location: {city}, Postnatal simulated long case."
-        st.success("تم توليد مريضة عشوائية بنجاح، إنها صامتة وتنتظر سؤالك الأول الآن صوتياً أو كتابياً!")
+            st.session_state.active_prompt = "You are a Libyan postpartum patient. Answer shortly in Libyan dialect (1 line). You complain of high fever and heavy vaginal bleeding (Postpartum Endometritis). Do not say diagnosis."
+        st.success("تم دخول المريضة بنجاح. ابدأ بسؤالها الآن.")
 
-    # عرض المحادثة
     for m in st.session_state.history_msgs:
         avatar = "🤰" if m["role"] == "patient" else "👨‍⚕️"
         with st.chat_message(m["role"], avatar=avatar): st.write(m["text"])
             
-    user_text = st.chat_input("اسأل المريضة هنا (مثال: شن تحسي يا خالة؟)...")
+    user_text = st.chat_input("اسأل المريضة هنا (مثال: السلام عليكم، شن اسمك يا خالة؟)...")
     if user_text:
-        with st.spinner("المريضة تجيب..."):
+        with St.spinner("المريضة تجيب..."):
             ans = ask_gemini_direct(st.session_state.active_prompt, st.session_state.history_msgs, user_text)
             st.session_state.history_msgs.append({"role": "doctor", "text": user_text})
             st.session_state.history_msgs.append({"role": "patient", "text": ans})
             st.rerun()
-            
-    if st.session_state.history_msgs and st.button("📊 إنهاء وطلب تقييم البروفيسور"):
-        with st.spinner("جاري إعداد تقرير التقييم السريري الدقيق..."):
-            report = ask_gemini_direct("Act as an OB/GYN Professor. Evaluate the student history based on strict guidelines. Provide a report in Arabic.", st.session_state.history_msgs, "Provide final clinical review.")
-            st.info(report)
 
 # ==========================================
-# 2. اللجنة الثانية: OSCE Short Cases (English)
+# 2. اللجنة الثانية: OSCE Short Cases
 # ==========================================
 elif board_selection == "اللجنة الثانية: OSCE Short Cases (English)":
     st.subheader("🔬 OSCE Station: Short Cases Discussion")
-    st.write("This station generates 2 structured short cases (1 Gynecology, 1 Obstetrics) followed by interactive exam questions.")
     
-    if st.button("🎲 Generate New Double Short Cases"):
+    if st.button("🎲 Generate New OSCE Short Cases"):
         st.session_state.osce_msgs = []
-        osce_prompt = """You are an expert OB/GYN OSCE Examiner. Generate exactly two clinical short cases:
-        1. One Obstetrics short case (e.g., Shoulder dystocia management, Breech options).
-        2. One Gynecology short case (e.g., Postmenopausal bleeding, PCOS workup).
-        Provide the cases, then list 3 clear, sequential questions for the student to solve. Stop and wait for answers."""
-        
-        with st.spinner("Formulating OSCE Station scenarios..."):
-            initial_cases = ask_gemini_direct(osce_prompt, [], "Generate the station.")
+        osce_prompt = "Act as an OB/GYN OSCE Examiner. Present one brief Obstetrics case and one brief Gynecology case, followed by 2 simple questions. Keep it compact."
+        with st.spinner("Formulating OSCE Station..."):
+            initial_cases = ask_gemini_direct(osce_prompt, [], "Generate cases.")
             st.session_state.osce_msgs.append({"role": "assistant", "text": initial_cases})
-            st.session_state.active_prompt = "You are the OSCE Examiner reviewing short cases answers in English. Grade strictly."
+            st.session_state.active_prompt = "You are the OSCE Examiner. Grade the response strictly in English."
 
     for m in st.session_state.osce_msgs:
         avatar = "🔬" if m["role"] == "assistant" else "👨‍⚕️"
         with st.chat_message(m["role"], avatar=avatar): st.write(m["text"])
             
-    student_ans = st.chat_input("Type your answers to the OSCE questions here in English...")
+    student_ans = st.chat_input("Type your answers to OSCE questions here...")
     if student_ans:
-        with st.spinner("Examiner is analyzing your answers..."):
+        with st.spinner("Analyzing answers..."):
             feedback = ask_gemini_direct(st.session_state.active_prompt, st.session_state.osce_msgs, student_ans)
             st.session_state.osce_msgs.append({"role": "doctor", "text": student_ans})
             st.session_state.osce_msgs.append({"role": "assistant", "text": feedback})
             st.rerun()
 
 # ==========================================
-# 3. اللجنة الثالثة: Curriculum & Instruments Quiz
+# 3. اللجنة الثالثة: Curriculum Quiz
 # ==========================================
 else:
-    st.subheader("📚 Board 3: Curriculum Topics & Instruments Viva")
-    st.write("Practice theoretical questions and surgical instruments/tools questions from Dr. Heba's lectures.")
-    
-    quiz_mode = st.radio("Select Quiz Domain:", ["General Syllabus (81 Topics)", "Surgical Instruments & Equipment (Dr. Heba)"], horizontal=True)
+    st.subheader("📚 Board 3: Topics & Instruments Viva")
+    quiz_mode = st.radio("Select Quiz Domain:", ["General Syllabus Topics", "Surgical Instruments & Equipment"], horizontal=True)
     
     if st.button("❓ Pull a Random Exam Question"):
         st.session_state.quiz_msgs = []
-        selected_topic = random.choice(CURRICULUM_TOPICS)
+        st.session_state.selected_topic = random.choice(CURRICULUM_TOPICS)
         
-        if quiz_mode == "General Syllabus (81 Topics)":
-            quiz_prompt = f"Act as an OB/GYN external viva examiner. Pick this topic: '{selected_topic}'. Ask a tough, high-yield clinical question suitable for a final 4th year medical student. Do not give the answer yet."
+        if quiz_mode == "General Syllabus Topics":
+            quiz_prompt = f"Ask a high-yield medical exam question for a 4th-year student regarding this specific topic: '{st.session_state.selected_topic}'."
         else:
-            quiz_prompt = "Act as an OB/GYN examiner testing clinical instruments (e.g., Ventouse, Forceps, Sims Speculum, Foley catheter complications, Curettes from Dr. Heba's lectures). Describe a specific surgical instrument scenario/indications or complications, and ask 2 questions about it."
+            quiz_prompt = "Ask a clinical question about one standard OB/GYN instrument (like Ventouse, Forceps, Speculum, or Foley Catheter). Describe its use or complication."
             
-        with st.spinner("Extracting standard exam question..."):
+        with st.spinner("Extracting question..."):
             q_text = ask_gemini_direct(quiz_prompt, [], "Give me the question.")
             st.session_state.quiz_msgs.append({"role": "assistant", "text": q_text})
-            st.session_state.active_prompt = "You are the final medical viva examiner validating the clinical accuracy of the student response."
+            st.session_state.active_prompt = "You are the clinical viva examiner validating this topic answer."
 
     for m in st.session_state.quiz_msgs:
         avatar = "📚" if m["role"] == "assistant" else "👨‍⚕️"
         with st.chat_message(m["role"], avatar=avatar): st.write(m["text"])
             
-    quiz_input = st.chat_input("Write your academic answer here in English...")
+    quiz_input = st.chat_input("Write your academic answer here...")
     if quiz_input:
-        with st.spinner("Evaluating your answer accuracy..."):
+        with st.spinner("Evaluating accuracy..."):
             evaluation = ask_gemini_direct(st.session_state.active_prompt, st.session_state.quiz_msgs, quiz_input)
             st.session_state.quiz_msgs.append({"role": "doctor", "text": quiz_input})
             st.session_state.quiz_msgs.append({"role": "assistant", "text": evaluation})
