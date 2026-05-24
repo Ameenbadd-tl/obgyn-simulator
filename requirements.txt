@@ -5,3 +5,5 @@ sentencepiece
 openai-whisper
 coqui-tts
 torchaudio
+numpy
+soundfile
