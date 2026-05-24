@@ -1,6 +1,4 @@
 streamlit
-requests
-gTTS
 transformers
 torch
 sentencepiece
