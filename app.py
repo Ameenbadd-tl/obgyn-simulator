@@ -8,9 +8,8 @@ st.set_page_config(page_title="OB/GYN Long Case Simulator", page_icon="🩺", la
 st.title("🩺 محاكي امتحان الـ Long Case (نساء وولادة)")
 st.write("مرحباً بك يا دكتور أمين وزملائك. سجلوا أسئلتكم كفويس نوت على الموبايل وارفعوها هنا للتحدث مع المريضة.")
 
-# 2. حقن مفتاح الـ API الخاص بك مباشرة
+# 2. إعداد مفتاح الـ API الخاص بك بشكل آمن ومباشر
 GEMINI_API_KEY = "AIzaSyCEfS8-uK42rx0AgZP8711a6M9TCXRPiZw"
-genai.configure(api_key=GEMINI_API_KEY)
 
 # 3. التعليمات البرمجية لتوجيه الذكاء الاصطناعي (System Prompt)
 SYSTEM_PROMPT = """
@@ -27,28 +26,43 @@ CRITICAL RULES:
 # 4. إدارة الجلسة والذاكرة في المتصفح للحفاظ على سير الحالة
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "chat_session" not in st.session_state:
-    st.session_state.chat_session = None
+if "case_started" not in st.session_state:
+    st.session_state.case_started = False
+
+# دالة لتوليد الردود دون استخدام start_chat المسببة للمشاكل في السيرفر
+def ask_gemini(prompt_input):
+    try:
+        # تهيئة العميل مباشرة عند كل طلب لضمان عدم حدوث NotFound
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+        
+        # بناء سياق المحادثة كاملاً يدوياً
+        full_contents = [{"role": "user", "parts": [SYSTEM_PROMPT]}]
+        for msg in st.session_state.messages:
+            role_type = "model" if msg["role"] == "patient" else "user"
+            full_contents.append({"role": role_type, "parts": [msg["text"]]})
+        
+        full_contents.append({"role": "user", "parts": [prompt_input]})
+        
+        response = model.generate_content(full_contents)
+        return response.text
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 # زر بدء حالة جديدة
 if st.button("🎬 ابدأ حالة سريرية جديدة (مريضة جديدة)"):
-    # استخدام التسمية الثابتة والمضمونة للموديل لتفادي تعارض الإصدارات
-    model = genai.GenerativeModel(
-        model_name="models/gemini-1.5-flash", 
-        system_instruction=SYSTEM_PROMPT
-    )
-    st.session_state.chat_session = model.start_chat(history=[])
     st.session_state.messages = []
+    st.session_state.case_started = True
     
     with st.spinner("جاري دخول المريضة إلى العيادة..."):
-        response = st.session_state.chat_session.send_message("ابدئي الحالة واشتكي من العرض الرئيسي بلهجة عامية في سطر واحد")
+        initial_reply = ask_gemini("ابدئي الحالة واشتكي من العرض الرئيسي بلهجة عامية في سطر واحد")
         
         # توليد الصوت للشكوى الأولى
         tts_path = "reply_start.mp3"
-        tts = gTTS(text=response.text, lang='ar', slow=False)
+        tts = gTTS(text=initial_reply, lang='ar', slow=False)
         tts.save(tts_path)
         
-        st.session_state.messages.append({"role": "patient", "text": response.text, "audio_path": tts_path})
+        st.session_state.messages.append({"role": "patient", "text": initial_reply, "audio_path": tts_path})
 
 # 5. عرض المحادثة الحالية بشكل منظم
 for index, msg in enumerate(st.session_state.messages):
@@ -62,12 +76,12 @@ for index, msg in enumerate(st.session_state.messages):
             st.write(msg["text"])
 
 # 6. التفاعل مع المريضة
-if st.session_state.chat_session:
+if st.session_state.case_started:
     st.write("---")
     st.subheader("🎙️ وجه سؤالك للمريضة:")
     
-    # ميزة رفع ملف صوتي مدمجة في الويب ومتوافقة مع كل الأجهزة
-    audio_file = st.file_uploader("ارفع تسجيل سؤالك الصوتي هنا (Record & Upload):", type=["wav", "mp3", "m4a", "ogg"])
+    # ميزة رفع ملف صوتي
+    audio_file = st.file_uploader("ارفع تسجيل سؤالك الصوتي هنا:", type=["wav", "mp3", "m4a", "ogg"])
     
     # مربع نصي كخيار احتياطي وسريع
     user_text_input = st.chat_input("أو اكتب سؤالك هنا مباشرة...")
@@ -79,8 +93,12 @@ if st.session_state.chat_session:
         
         with st.spinner("المريضة تستمع وتجيب بصوتها..."):
             try:
+                genai.configure(api_key=GEMINI_API_KEY)
                 uploaded_audio = genai.upload_file("temp_user_voice.wav")
-                response = st.session_state.chat_session.send_message([uploaded_audio, "ردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد"])
+                
+                # إرسال الملف الصوتي مع صياغة يدوية للطلب
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+                response = model.generate_content([uploaded_audio, f"{SYSTEM_PROMPT}\n\nردي على سؤال الدكتور بصفتك المريضة بالعامية وفي سطر واحد"])
                 
                 tts_path = f"reply_{len(st.session_state.messages)}.mp3"
                 tts = gTTS(text=response.text, lang='ar', slow=False)
@@ -92,25 +110,25 @@ if st.session_state.chat_session:
                 genai.delete_file(uploaded_audio.name)
                 st.rerun()
             except Exception as e:
-                st.error("حدثت مشكلة صغيرة في قراءة الملف، جرب رفعه مجدداً أو استخدم الكتابة للسرعة.")
+                st.error("حدثت مشكلة في معالجة الملف الصوتي، يرجى المحاولة مرة أخرى أو استخدام الكتابة.")
 
     # ب) معالجة الإدخال النصي
     if user_text_input:
         with st.spinner("المريضة تجيب..."):
-            response = st.session_state.chat_session.send_message(user_text_input)
+            response_text = ask_gemini(user_text_input)
             
             tts_path = f"reply_{len(st.session_state.messages)}.mp3"
-            tts = gTTS(text=response.text, lang='ar', slow=False)
+            tts = gTTS(text=response_text, lang='ar', slow=False)
             tts.save(tts_path)
             
             st.session_state.messages.append({"role": "doctor", "text": user_text_input})
-            st.session_state.messages.append({"role": "patient", "text": response.text, "audio_path": tts_path})
+            st.session_state.messages.append({"role": "patient", "text": response_text, "audio_path": tts_path})
             st.rerun()
 
     # 7. قسم إنهاء الحالة والتقييم الطبي النهائي
     st.write("---")
     if st.button("📊 إنهاء الحالة وطلب التقييم من البروفيسور"):
         with st.spinner("جاري تحليل الـ History وإعداد تقرير اللجنة الطبية..."):
-            response = st.session_state.chat_session.send_message("انتهي من تقمص الدور الآن، واكتب لي التقييم الطبي الكامل للحالة باللغة العربية الفصحى الطبية، واذكر ما هو التشخيص السري، وما هي الأسئلة الهامة التي نسي الطلاب طرحها وما يجب فعله في الـ Examination.")
+            response_text = ask_gemini("انتهي من تقمص الدور الآن، واكتب لي التقييم الطبي الكامل للحالة باللغة العربية الفصحى الطبية، واذكر ما هو التشخيص السري، وما هي الأسئلة الهامة التي نسي الطلاب طرحها وما يجب فعله في الـ Examination.")
             st.markdown("### 📝 تقرير تقييم اللجنة الطبية:")
-            st.info(response.text)
+            st.info(response_text)
