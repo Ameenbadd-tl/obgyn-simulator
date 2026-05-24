@@ -10,7 +10,7 @@ st.set_page_config(page_title="OB/GYN Voice Simulator", page_icon="🩺", layout
 st.title("🩺 محاكي الـ Long Case الصوتي التلقائي")
 st.write("مرحباً بك يا دكتور أمين وزملائك. اضغط على الزر بالأسفل ثم ابدأ أنت بالتحدث مع المريضة عبر المايك مباشرة.")
 
-# 2. مجمّع المفاتيح الجديد (ضع مفاتيحك الجديدة النظيفة هنا داخل المستودع الخاص)
+# 2. مجمّع المفاتيح السبعة الجديدة (مدمجة وجاهزة للعمل بنظام التناوب الذكي)
 API_KEYS_POOL = [
     "AIzaSyCGXIIx3HIMC7GeFZFrcSmXpxZGgUG8K5Q",
     "AIzaSyBXxYZNFlVmpKf1f_oSgWqYVfgC7_spNCU",
@@ -58,18 +58,20 @@ if "last_processed_audio" not in st.session_state:
     st.session_state.last_processed_audio = None
 if "current_case_prompt" not in st.session_state:
     st.session_state.current_case_prompt = BASE_SYSTEM_PROMPT
-if "key_index" not in st.session_state:
-    st.session_state.key_index = 0
 
 # دالة إرسال ذكية تدور على المفاتيح بالترتيب وتتخطى المفتاح المضغوط تلقائياً
 def ask_gemini_direct(audio_path_input=None, text_input=None):
-    # محاولة الإرسال وتجربة المفاتيح المتاحة في حال فشل أحدها بسبب الكوتا
-    for _ in range(len(API_KEYS_POOL)):
-        idx = st.session_state.key_index
-        selected_key = API_KEYS_POOL[idx]
+    valid_keys = [k for k in API_KEYS_POOL if k and k != "AIzaSy..."]
+    
+    if not valid_keys:
+        return "Error: لم يتم العثور على مفاتيح اتصال صالحة!"
         
-        # تجهيز المؤشر للمفتاح التالي في الطلب القادم
-        st.session_state.key_index = (idx + 1) % len(API_KEYS_POOL)
+    # اختيار مؤشر عشوائي للبدء منه لتفادي التضارب بين جلسات الطلاب المختلفة
+    start_index = random.randint(0, len(valid_keys) - 1)
+    
+    for i in range(len(valid_keys)):
+        idx = (start_index + i) % len(valid_keys)
+        selected_key = valid_keys[idx]
         
         url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={selected_key}"
         headers = {"Content-Type": "application/json"}
@@ -100,16 +102,15 @@ def ask_gemini_direct(audio_path_input=None, text_input=None):
             if response.status_code == 200:
                 return res_json['candidates'][0]['content']['parts'][0]['text']
             elif response.status_code == 429 or "quota" in str(res_json).lower():
-                # إذا واجه المفتاح مشكلة كوتا، يستمر الكود في الحلقة لتجربة المفتاح التالي فوراً
+                # الانتقال للمفتاح التالي فوراً في حال تجاوز حد كوتا الحساب المجاني
                 continue
             else:
                 error_msg = res_json.get('error', {}).get('message', 'Unknown API Error')
                 return f"Error: {error_msg}"
         except Exception as e:
-            # في حال حدوث مهلة أو خطأ شبكة، ننتقل للمفتاح التالي
             continue
             
-    return "RESOURCE_EXHAUSTED: جميع المفاتيح مشغولة حالياً بالكامل بسبب ضغط الطلاب، يرجى إعادة المحاولة بعد ثوانٍ بسيطة."
+    return "RESOURCE_EXHAUSTED: جميع المفاتيح مشغولة حالياً بسبب ضغط الطلاب، يرجى إعادة المحاولة بعد ثوانٍ بسيطة."
 
 # زر بدء حالة جديدة
 if st.button("🎬 بدء أخذ History لحالة جديدة"):
