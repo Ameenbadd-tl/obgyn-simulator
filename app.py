@@ -12,7 +12,7 @@ st.write("مرحباً بك يا دكتور أمين وزملائك في الم�
 
 # 2. مجمّع المفاتيح السبعة المحمية بنظام التناوب الذكي
 API_KEYS_POOL = [
-    "AIzaSyCGXIIx3HIMC7GeFZFrcSmXpxZGgUG8K5Q",
+    "AIzaSyCTMSL1mCU2J3W0vEueR0n1mM3qd5-DpQE",
     "AIzaSyBXxYZNFlVmpKf1f_oSgWqYVfgC7_spNCU",
     "AIzaSyAA5E6EziXwrm8U3fFFCPkH-s9If3tP674",
     "AIzaSyAn8q3hwFn0K0i_OTOVHdhdTxR5j0MHUyw",
